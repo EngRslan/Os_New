@@ -1,0 +1,27 @@
+
+CFLAGS = -c -std=gnu99 -ffreestanding -O0 -Wall -Wextra -g
+ASFLAGS = -f elf32
+LDFLAGS = -T linker.ld -o kernel.elf -O0 -nostdlib
+
+CLIB_DIR=./clib
+SYS_DIR=./sys
+GDT_DIR=./sys/gdt
+IDT_DIR=./sys/idt
+
+CSRC= kernel.c $(GDT_DIR)/gdt.c $(IDT_DIR)/syscalls.c $(IDT_DIR)/idt.c $(IDT_DIR)/pic.c $(SYS_DIR)/port_io.c  $(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c
+SSRC= kernel_entry.asm $(GDT_DIR)/gdt_helper.asm $(IDT_DIR)/idt_helper.asm $(IDT_DIR)/idt_exceptions.asm $(IDT_DIR)/idt_irq.asm
+OBJS= $(CSRC:.c=.o) $(SSRC:.asm=.o)
+
+build: $(OBJS)
+	$(LINKER) $(LDFLAGS) -o kernel.elf $(OBJS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -I ./include -o $@ $<
+
+%.o: %.asm
+	$(AS) $(ASFLAGS) -o $@ $<
+
+clean:
+	rm -rf $(OBJS)
+	rm -rf *.o
+	rm -rf *.elf
