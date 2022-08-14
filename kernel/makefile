@@ -7,9 +7,16 @@ CLIB_DIR=./clib
 SYS_DIR=./sys
 GDT_DIR=./sys/gdt
 IDT_DIR=./sys/idt
+IRQ_DIR=./sys/irq
+MEM_DIR=./sys/memory
+DRIVERS_DIR=./drivers
 
-CSRC= kernel.c $(GDT_DIR)/gdt.c $(IDT_DIR)/syscalls.c $(IDT_DIR)/idt.c $(IDT_DIR)/pic.c $(SYS_DIR)/port_io.c  $(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c
-SSRC= kernel_entry.asm $(GDT_DIR)/gdt_helper.asm $(IDT_DIR)/idt_helper.asm $(IDT_DIR)/idt_exceptions.asm $(IDT_DIR)/idt_irq.asm
+CSRC= kernel.c \
+	$(GDT_DIR)/gdt.c $(IDT_DIR)/syscalls.c $(IDT_DIR)/idt.c $(IRQ_DIR)/irq.c $(DRIVERS_DIR)/pic.c $(SYS_DIR)/port_io.c \
+	$(MEM_DIR)/pmm.c \
+  	$(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c
+
+SSRC= kernel_entry.asm $(GDT_DIR)/gdt_helper.asm $(IDT_DIR)/idt_helper.asm $(IDT_DIR)/idt_exceptions.asm $(IRQ_DIR)/idt_irq.asm
 OBJS= $(CSRC:.c=.o) $(SSRC:.asm=.o)
 
 build: $(OBJS)

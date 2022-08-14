@@ -30,7 +30,9 @@
                 {
                     "text": "set output-radix 16"
                 }
-            ]
+            ],
+            "preLaunchTask": "run",
+            "postDebugTask": "clean"
         }
     ]
 }

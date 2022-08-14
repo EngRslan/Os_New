@@ -55,24 +55,7 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
-// Some IRQ constants
-#define IRQ_BASE                0x20
-#define IRQ0_Timer              0x00
-#define IRQ1_Keyboard           0x01
-#define IRQ2_CASCADE            0x02
-#define IRQ3_SERIAL_PORT2       0x03
-#define IRQ4_SERIAL_PORT1       0x04
-#define IRQ5_RESERVED           0x05
-#define IRQ6_DISKETTE_DRIVE     0x06
-#define IRQ7_PARALLEL_PORT      0x07
-#define IRQ8_CMOS_CLOCK         0x08
-#define IRQ9_CGA                0x09
-#define IRQ10_RESERVED          0x0A
-#define IRQ11_RESERVED          0x0B
-#define IRQ12_AUXILIARY         0x0C
-#define IRQ13_FPU               0x0D
-#define IRQ14_HARD_DISK         0x0E
-#define IRQ15_RESERVED          0x0F
+
 
 typedef struct idt_entry {
     unsigned short base_lo;
@@ -87,14 +70,13 @@ typedef struct idt_ptr {
     unsigned int base;
 } __attribute__((packed)) idt_ptr_t;
 
-// Interrupt Service Routine function prototype
-typedef void (*isr_t)(register_t * );
+
 
 
 
 // Idt functions
 void idt_install();
 void idt_set_entry(int index, unsigned int base, unsigned short sel, unsigned char ring);
-void register_interrupt_handler(int num, isr_t handler);
+
 
 #endif

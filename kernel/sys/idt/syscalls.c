@@ -1,4 +1,5 @@
-#include <kernel/idt.h>
+#include <kernel/isr.h>
+#include <kernel/system.h>
 #include <stdio.h>
 
 int syscall_1(unsigned int ebx,unsigned int ecx,unsigned int edx,unsigned int esi)

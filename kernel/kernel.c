@@ -1,7 +1,9 @@
 #include <kernel/multiboot.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
-#include <kernel/syscalls.h>>
+#include <kernel/isr.h>
+#include <kernel/syscalls.h>
+#include <kernel/mem/pmm.h>
 #include <stdio.h>
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
@@ -27,13 +29,16 @@ void kernel_main(unsigned long magic, multiboot_info_t *mbi)
   idt_install();
   syscalls_install();
   printf("installed \n");
+  printf("Installing Memory Map .");
+  pmm_install();
+  printf("installed \n");
 
   register_interrupt_handler(0x20,tick_handler);
   register_interrupt_handler(0x21,kbd_handler);
 
   int a;
   __asm__ __volatile__("int $0x80":"=a"(a):"a"(0),"b"(0x120),"d"(0x160));
-  printf("Installing Memory Map .");
+  
 
   for (;;) { }
   

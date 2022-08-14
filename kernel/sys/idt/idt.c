@@ -1,4 +1,5 @@
 #include <kernel/idt.h>
+#include <kernel/isr.h>
 #include <kernel/pic.h>
 #include <kernel/system.h>
 #include <string.h>
@@ -9,7 +10,6 @@ extern void idt_flush(unsigned int ptr);
 
 idt_entry_t idt_entries[NUM_IDT_ENTRIES];
 idt_ptr_t idt_ptr;
-isr_t interrupt_handlers[256];
 
 char *exception_messages[32] =
 {
@@ -127,12 +127,6 @@ void exception_handler(register_t reg) {
          handler(&reg);
     }
 
-}
-
-void register_interrupt_handler(int num, isr_t handler) {
-    printf("IRQ %d Registered\n", num);
-    if(num < 256)
-        interrupt_handlers[num] = handler;
 }
 
 void irq_handler(register_t * reg) {
