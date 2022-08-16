@@ -20,6 +20,7 @@ void kernel_main(unsigned long magic, multiboot_info_t *mbi)
     return;
   }
 
+  printf("addr: 0x%x, size: 0x%x, num: 0x%x",mbi->u.elf_sec.addr,mbi->u.elf_sec.size,mbi->u.elf_sec.num);
   
   printf("Installing GDT .");
   gdt_install();
@@ -32,7 +33,12 @@ void kernel_main(unsigned long magic, multiboot_info_t *mbi)
   printf("Installing Memory Map .");
   pmm_install();
   printf("installed \n");
-
+  printf("\n test Memory Allocation .");
+  void * ptr1 = allocate_block();
+  void * ptr2 = allocate_block();
+  free_block(ptr1);
+  void * ptr3 = allocate_block();
+  free_block(ptr2);
   register_interrupt_handler(0x20,tick_handler);
   register_interrupt_handler(0x21,kbd_handler);
 
