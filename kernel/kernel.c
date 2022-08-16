@@ -22,18 +22,22 @@ void kernel_main(unsigned long magic, multiboot_info_t *mbi)
 
   printf("addr: 0x%x, size: 0x%x, num: 0x%x",mbi->u.elf_sec.addr,mbi->u.elf_sec.size,mbi->u.elf_sec.num);
   
-  printf("Installing GDT .");
+  printf("\nInstalling GDT .");
   gdt_install();
-  printf("installed \n");
+  printf("installed");
 
-  printf("Installing IDT .");
+  printf("\nInstalling IDT .");
   idt_install();
   syscalls_install();
-  printf("installed \n");
-  printf("Installing Memory Map .");
-  pmm_install();
-  printf("installed \n");
-  printf("\n test Memory Allocation .");
+  printf("installed");
+  printf("\nInstalling Memory Map .");
+  if(CHECK_FLAG(mbi->flags,6)){
+    pmm_install((multiboot_memory_map_t *)mbi->mmap_addr,mbi->mmap_length);
+    printf("installed \n");
+  }else{
+    printf("Cannot install memory FAILED");
+  }
+  printf("\ntest Memory Allocation .");
   void * ptr1 = allocate_block();
   void * ptr2 = allocate_block();
   free_block(ptr1);

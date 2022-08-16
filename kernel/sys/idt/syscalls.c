@@ -17,17 +17,17 @@ void syscall_dispatcher(register_t * regs) {
     void * system_api = syscall_table[regs->eax];
     int ret;
     asm volatile (" \
-     push %1; \
-     push %2; \
-     push %3; \
-     push %4; \
-     push %5; \
+     pushl %1; \
+     pushl %2; \
+     pushl %3; \
+     pushl %4; \
+     pushl %5; \
      call *%6; \
-     pop %%ebx; \
-     pop %%ebx; \
-     pop %%ebx; \
-     pop %%ebx; \
-     pop %%ebx; \
+     popl %%ebx; \
+     popl %%ebx; \
+     popl %%ebx; \
+     popl %%ebx; \
+     popl %%ebx; \
      " : "=a" (ret) : "r" (regs->edi), "r" (regs->esi), "r" (regs->edx), "r" (regs->ecx), "r" (regs->ebx), "r" (system_api));
 
     // I don't beleive this would set eax to return value ?

@@ -1,5 +1,6 @@
 #ifndef PMM_H
 #define PMM_H
+#include "../multiboot.h"
     #define BLOCK_SIZE 4096
     #define BLOCKS_PER_BUCKET 8
 
@@ -12,7 +13,7 @@
 
     extern unsigned int kernel_end;
 
-    void pmm_install();
+    void pmm_install(multiboot_memory_map_t * address,unsigned int length);
     void * allocate_block();
     void free_block(void * ptr);
 #endif
