@@ -1,12 +1,13 @@
 #include <kernel/mem/pmm.h>
 #include <kernel/multiboot.h>
 #include <string.h>
+#include <stdio.h>
 
 unsigned int find_free_block();
-void mark_reserved_region(unsigned int address,unsigned int len);
+void mark_reserved_region(void * address,unsigned int len);
 
-unsigned int * bitmap_start = (unsigned int *)&kernel_end;
-void * memory_start ;
+unsigned char * bitmap_start = (unsigned char *)&kernel_end;
+void * memory_start ; 
 
 unsigned int total_blocks ;
 unsigned int bitmap_size ;
@@ -19,13 +20,14 @@ void pmm_install(multiboot_memory_map_t * address,unsigned int length){
     bitmap_size = total_blocks / BLOCKS_PER_BUCKET;
     if(total_blocks % BLOCKS_PER_BUCKET)bitmap_size++;
     memset(bitmap_start,0,bitmap_size);
-    unsigned int alignedBitMap = (unsigned int)((void *)bitmap_start+bitmap_size);
+    unsigned int alignedBitMap = (unsigned int)(bitmap_start+bitmap_size);
     memory_start = (void *)BLOCK_ALIGN(alignedBitMap);
 
     for (unsigned char i = 0; i < mem_records; i++,address++)
     {
+        printf("\nmemory Addr:0x%x, Len:%x, Type:0x%x",(unsigned int)address->addr,(unsigned int)address->len,address->type);
         if(address->type != MULTIBOOT_MEMORY_AVAILABLE){
-            mark_reserved_region(address->addr,address->len);
+            mark_reserved_region((void *)((unsigned int)address->addr),(unsigned int)address->len);
         }
     }
     
@@ -51,20 +53,18 @@ unsigned int find_free_block(){
     
 }
 
-void mark_reserved_region(unsigned int address,unsigned int len){
+void mark_reserved_region(void * address,unsigned int len){
     unsigned int total_blocks = len / BLOCK_SIZE;
     if((len % BLOCK_SIZE)>0)total_blocks++;
-    // align address to start of block
-    unsigned int start_address = address / BLOCK_SIZE ;
-    // unsigned int alignedBlock = start_address / BLOCK_SIZE;
+    unsigned int first_block_number = GET_BLOCK_NUMBER((unsigned int)address);
 
-    for (;total_blocks > 0; total_blocks--)
+    for (unsigned int i = 0;i < total_blocks; i++)
     {
-        SETBIT(start_address+total_blocks);
+        SETBIT((first_block_number+i));
     }
     
 }
 
 void free_block(void * ptr){
-    CLEARBIT((unsigned int)((ptr - memory_start)/BLOCK_SIZE));
+    CLEARBIT((unsigned int)GET_BLOCK_NUMBER((unsigned int)ptr));
 }

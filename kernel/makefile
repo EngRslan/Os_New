@@ -1,5 +1,5 @@
 
-CFLAGS = -c -std=gnu99 -ffreestanding -O0 -Wall -Wextra -g
+CFLAGS = -c -std=gnu99 -ffreestanding -Wno-unused-parameter -Wno-unused-variable -O0 -Wall -Wextra -g
 ASFLAGS = -f elf32
 LDFLAGS = -T linker.ld -o kernel.elf -O0 -nostdlib
 
