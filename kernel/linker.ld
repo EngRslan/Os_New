@@ -12,29 +12,39 @@ SECTIONS
 	/* First put the multiboot header, as it is required to be put very early
 	   early in the image or the bootloader won't recognize the file format.
 	   Next we'll put the .text section. */
-	.text BLOCK(4K) : ALIGN(4K)
+	_start_kernel = .;
+	.multiboot.data :
+	{
+		*(.multiboot.data)
+	}
+	.low_kernel_text :{
+		*(.low_kernel_text)
+	}
+	. += 3072M;
+	.text BLOCK(4K) :  AT(ADDR(.text) - 3072M)
 	{
 		*(.multiboot)
 		*(.text)
 	}
  
 	/* Read-only data. */
-	.rodata BLOCK(4K) : ALIGN(4K)
+	.rodata BLOCK(4K) : AT(ADDR(.rodata) - 3072M)
 	{
 		*(.rodata)
 	}
  
 	/* Read-write data (initialized) */
-	.data BLOCK(4K) : ALIGN(4K)
+	.data BLOCK(4K) : AT(ADDR(.data) - 3072M)
 	{
 		*(.data)
 	}
  
 	/* Read-write data (uninitialized) and stack */
-	.bss BLOCK(4K) : ALIGN(4K)
+	.bss BLOCK(4K) : AT(ADDR(.bss) - 3072M)
 	{
 		*(COMMON)
 		*(.bss)
+		*(.bootstrap_stack)
 	}
 	
 	kernel_end = .;
