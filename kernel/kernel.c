@@ -9,18 +9,17 @@
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 void tick_handler(register_t * reg);
 void kbd_handler(register_t * reg);
-void kernel_main (unsigned long magic, multiboot_info_t *mbi);
+void kernel_main (unsigned long magic, multiboot_info_t * mbi);
 
-void kernel_main(unsigned long magic, multiboot_info_t *mbi) 
+void kernel_main(unsigned long magic, multiboot_info_t * mbi) 
 {
-
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
     printf ("Invalid magic number: 0x%x\n", (unsigned) magic);
     return;
   }
 
-  printf("addr: 0x%x, size: 0x%x, num: 0x%x",mbi->u.elf_sec.addr,mbi->u.elf_sec.size,mbi->u.elf_sec.num);
+  // printf("addr: 0x%x, size: 0x%x, num: 0x%x",mbi->u.elf_sec.addr,mbi->u.elf_sec.size,mbi->u.elf_sec.num);
   
   printf("\nInstalling GDT .");
   gdt_install();

@@ -8,7 +8,7 @@
 /* The attribute of an character. */
 #define ATTRIBUTE               7
 /* The video memory address. */
-#define VIDEO                   0xB8000
+#define VIDEO                   0xC0000000 + 0xb8000
 
 /* Point to the video memory. */
 unsigned char *video = (unsigned char *)VIDEO;

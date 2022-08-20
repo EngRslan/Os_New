@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/kernel/kernel.elf",
             "miDebuggerServerAddress": "localhost:1234",
             "args": [],
-            "stopAtEntry": false,
+            "stopAtEntry": true,
             "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,

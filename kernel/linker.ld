@@ -12,18 +12,17 @@ SECTIONS
 	/* First put the multiboot header, as it is required to be put very early
 	   early in the image or the bootloader won't recognize the file format.
 	   Next we'll put the .text section. */
-	_start_kernel = .;
+	_kernel_start = .;
 	.multiboot.data :
 	{
 		*(.multiboot.data)
 	}
-	.low_kernel_text :{
-		*(.low_kernel_text)
+	.multiboot.text :{
+		*(.multiboot.text)
 	}
 	. += 3072M;
 	.text BLOCK(4K) :  AT(ADDR(.text) - 3072M)
 	{
-		*(.multiboot)
 		*(.text)
 	}
  
@@ -46,7 +45,7 @@ SECTIONS
 		*(.bss)
 		*(.bootstrap_stack)
 	}
-	
+	_kernel_end = .;
 	kernel_end = .;
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */
