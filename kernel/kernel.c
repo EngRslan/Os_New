@@ -4,6 +4,7 @@
 #include <kernel/isr.h>
 #include <kernel/syscalls.h>
 #include <kernel/mem/pmm.h>
+#include <kernel/mem/vmm.h>
 #include <stdio.h>
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
@@ -21,7 +22,7 @@ void kernel_main(unsigned long magic, multiboot_info_t * mbi)
 
   // printf("addr: 0x%x, size: 0x%x, num: 0x%x",mbi->u.elf_sec.addr,mbi->u.elf_sec.size,mbi->u.elf_sec.num);
   
-  printf("\nInstalling GDT .");
+  printf("Installing GDT .");
   gdt_install();
   printf("installed");
 
@@ -36,12 +37,11 @@ void kernel_main(unsigned long magic, multiboot_info_t * mbi)
   }else{
     printf("Cannot install memory FAILED");
   }
-  printf("\ntest Memory Allocation .");
-  void * ptr1 = allocate_block();
-  void * ptr2 = allocate_block();
-  free_block(ptr1);
-  void * ptr3 = allocate_block();
-  free_block(ptr2);
+  
+  printf("\nInstall Virtual Memory .");
+  vmm_install();
+  printf("Installed");
+
   register_interrupt_handler(0x20,tick_handler);
   register_interrupt_handler(0x21,kbd_handler);
 

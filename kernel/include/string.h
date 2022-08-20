@@ -1,8 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
-
-    typedef unsigned int size_t;
-    #define NULL (void *)0x0
+#include <stddef.h>
+    
 
 /**
  * memchr - Find a character in an area of memory.

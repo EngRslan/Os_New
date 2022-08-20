@@ -12,46 +12,76 @@ dd MULTIBOOT_HEADER_MAGIC
 dd MULTIBOOT_HEADER_FLAGS
 dd MULTIBOOT_CHECKSUM
 
-section .bootstrap_stack nobits alloc write 
-stack_bottom:
-resb 16384
-stack_top:
-
-section .bss nobits alloc write
+section .lower_half.bss  nobits alloc write
 align 4096
 boot_page_directory:
     resb 4096
 boot_page_table1:
     resb 4096
+higher_kernel_page_table1:
+    resb 4096
 
-section .multiboot.text alloc
+section .bootstrap_stack nobits alloc write 
+stack_bottom:
+resb 16384
+stack_top:
+
+section .lower_half.text alloc
 global _start 
+extern _lower_kernel_end
 extern _kernel_start
 extern _kernel_end
-_start:
-    xchg bx,bx
-    mov edi, boot_page_table1-HIGHER_HALF_KERNEL_ADDR
+extern _higher_kernel_start
+jmp _start
+map_identity:
+    mov edi, boot_page_table1
     mov esi,0
-    mov ecx,1024
 
-;;
-;; Map First 4 MB TO 0xC0000000
-;;
-fill_page_table:
+    ;; calculate total needed pages
+    mov eax , _lower_kernel_end
+    shr eax , 12
+    mov ecx,eax
+    ;;
+    ;; Map
+    ;;
+    .fill_page_table:
     mov edx, esi
     or dword edx , 0x003
     mov dword [edi] , edx
+    add esi , 0x1000
+    add edi , 4
+    loop .fill_page_table
+    ret
 
-    add esi, 0x1000
-    add edi,4
-    loop fill_page_table
+map_Higer_kernel:
+    mov edi, higher_kernel_page_table1
+    mov esi,_lower_kernel_end
+    mov ecx,1024
+    ;;
+    ;; Map
+    ;;
+    .fill_page_table:
+    mov edx, esi
+    or dword edx , 0x003
+    mov dword [edi] , edx
+    add esi , 0x1000
+    add edi , 4
+    loop .fill_page_table
+    ret
+
+_start:
+    xchg bx,bx
+    push eax
+    push ebx
+    call map_identity
+    call map_Higer_kernel
     
 
 step3:
-    mov dword [boot_page_directory - HIGHER_HALF_KERNEL_ADDR] , (boot_page_table1 - HIGHER_HALF_KERNEL_ADDR + 0x003)
-	mov dword [boot_page_directory - HIGHER_HALF_KERNEL_ADDR + 768 * 4] , (boot_page_table1 - HIGHER_HALF_KERNEL_ADDR + 0x003)
+    mov dword [boot_page_directory] , (boot_page_table1 + 0x003)
+	mov dword [boot_page_directory + 768 * 4] , (higher_kernel_page_table1 + 0x003)
 
-    mov ecx , boot_page_directory - HIGHER_HALF_KERNEL_ADDR
+    mov ecx , boot_page_directory
 	mov cr3 , ecx
 
     mov ecx , cr0 
@@ -67,11 +97,11 @@ hight_kernel_start:
     ; mov dword [boot_page_directory + 0], 0 
     ; mov ecx , cr3
 	; mov cr3, ecx
-
-    mov     esp , stack_top
-    add ebx, HIGHER_HALF_KERNEL_ADDR
-    push   ebx
-    push   eax
+    pop ebx
+    pop eax
+    mov esp , stack_top
+    push ebx
+    push eax
     call kernel_main
     cli
     hlt

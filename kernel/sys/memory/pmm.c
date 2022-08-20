@@ -5,8 +5,8 @@
 
 unsigned int find_free_block();
 void mark_reserved_region(void * address,unsigned int len);
-
-unsigned char * bitmap_start = (unsigned char *)&kernel_end;
+// unsigned int * kaddress = &_kernel_end-0xC0000000;
+unsigned char * bitmap_start = ((unsigned char *)(&_kernel_end))-0xC0000000;
 void * memory_start ; 
 
 unsigned int total_blocks ;

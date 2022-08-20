@@ -17,36 +17,40 @@ SECTIONS
 	{
 		*(.multiboot.data)
 	}
-	.multiboot.text :{
-		*(.multiboot.text)
+	.lower_half.text :{
+		*(.lower_half.text)
 	}
-	. += 3072M;
-	.text BLOCK(4K) :  AT(ADDR(.text) - 3072M)
+	.lower_half.bss :{
+		*(.lower_half.bss)
+	}
+	_lower_kernel_end = .;
+	. = 3072M;
+	_higher_kernel_start = . ;
+	.text BLOCK(4K) :  AT(ADDR(.text) - 3072M + _lower_kernel_end)
 	{
 		*(.text)
 	}
  
 	/* Read-only data. */
-	.rodata BLOCK(4K) : AT(ADDR(.rodata) - 3072M)
+	.rodata BLOCK(4K) : AT(ADDR(.rodata) - 3072M + _lower_kernel_end)
 	{
 		*(.rodata)
 	}
  
 	/* Read-write data (initialized) */
-	.data BLOCK(4K) : AT(ADDR(.data) - 3072M)
+	.data BLOCK(4K) : AT(ADDR(.data) - 3072M + _lower_kernel_end)
 	{
 		*(.data)
 	}
  
 	/* Read-write data (uninitialized) and stack */
-	.bss BLOCK(4K) : AT(ADDR(.bss) - 3072M)
+	.bss BLOCK(4K) : AT(ADDR(.bss) - 3072M + _lower_kernel_end)
 	{
 		*(COMMON)
 		*(.bss)
 		*(.bootstrap_stack)
 	}
 	_kernel_end = .;
-	kernel_end = .;
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */
 }

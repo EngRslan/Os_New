@@ -12,7 +12,10 @@
     #define BLOCK_ALIGN_TO_START(addr) (((addr) & 0xFFFFF000))
     #define BLOCK_ALIGN(addr) (((addr) & 0xFFFFF000) + 0x1000)
     #define GET_BLOCK_NUMBER(addr)((BLOCK_ALIGN_TO_START(addr)/BLOCK_SIZE))
-    extern unsigned int kernel_end;
+    
+    extern unsigned int _kernel_end;
+    extern unsigned int bitmap_size ;
+    extern unsigned char * bitmap_start ;
 
     void pmm_install(multiboot_memory_map_t * address,unsigned int length);
     void * allocate_block();
