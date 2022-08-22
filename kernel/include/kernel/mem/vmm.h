@@ -3,9 +3,11 @@
 #define PAGE_SIZE 0x1000
 #define DIR_INDEX(vaddr)((v_addr_t)vaddr >> 22)
 #define PAGE_INDEX(vaddr)(((v_addr_t)vaddr >> 12)&0x3FF)
+#define PHYSICAL_ADDRESS(entry)(* entry & ~0xFFF)
 
 typedef unsigned int p_frame_t;
 typedef unsigned int v_addr_t;
+
 
 typedef struct page_table_entry{
     unsigned int present    :1;
@@ -43,5 +45,10 @@ typedef struct page_directory
     page_table_directory_t tables[1024];
 } page_directory_t;
 
+extern page_directory_t * kernel_directory;
+
 void vmm_install();
+void allocate_page(page_directory_t * dir,v_addr_t virtual_address,unsigned int is_user,unsigned int is_writable);
+void allocate_region(page_directory_t * dir,v_addr_t virtual_address,unsigned int total_pages,unsigned int is_user,unsigned int is_writable);
+void free_page(page_directory_t * dir,v_addr_t virtual_address);
 #endif

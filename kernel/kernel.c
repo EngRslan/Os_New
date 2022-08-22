@@ -33,7 +33,7 @@ void kernel_main(unsigned long magic, multiboot_info_t * mbi)
   printf("\nInstalling Memory Map .");
   if(CHECK_FLAG(mbi->flags,6)){
     pmm_install((multiboot_memory_map_t *)mbi->mmap_addr,mbi->mmap_length);
-    printf("installed \n");
+    printf("installed");
   }else{
     printf("Cannot install memory FAILED");
   }
@@ -42,13 +42,21 @@ void kernel_main(unsigned long magic, multiboot_info_t * mbi)
   vmm_install();
   printf("Installed");
 
+  printf("\nTest Virtual Memory .");
+//   allocate_page(kernel_directory,0x800000,0,1);
+
+//   unsigned int * mm = (unsigned int *)0x800000;
+// *mm = 0xFFFFFFFF;
+//   free_page(kernel_directory,0x800000);
+// *mm = 0x0;
+
   register_interrupt_handler(0x20,tick_handler);
   register_interrupt_handler(0x21,kbd_handler);
 
   int a;
   __asm__ __volatile__("int $0x80":"=a"(a):"a"(0),"b"(0x120),"d"(0x160));
   
-
+  printf("\nsuccessfully halted");
   for (;;) { }
   
 

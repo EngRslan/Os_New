@@ -40,7 +40,7 @@ map_identity:
     ;; calculate total needed pages
     mov eax , _lower_kernel_end
     shr eax , 12
-    mov ecx,eax
+    mov ecx,1024
     ;;
     ;; Map
     ;;

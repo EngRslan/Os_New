@@ -119,7 +119,15 @@ void idt_set_entry(int index, unsigned int base, unsigned short sel, unsigned ch
 
 void exception_handler(register_t reg) {
     if(reg.int_no < 32) {
-        printf("EXCEPTION: %s (err code is 0x%x)\n", exception_messages[reg.int_no], reg.err_code);
+        if(reg.int_no == 0xe){
+            unsigned int bad_address=0;
+            __asm__ __volatile__("movl %%cr2, %0":"=r"(bad_address));
+            printf("EXCEPTION: %s (err code is 0x%x) (Bad address is 0x%x)\n", exception_messages[reg.int_no], reg.err_code, bad_address);
+
+        }else{
+            printf("EXCEPTION: %s (err code is 0x%x)\n", exception_messages[reg.int_no], reg.err_code);
+        }
+        
         for(;;);
     }
     if(interrupt_handlers[reg.int_no] != NULL) {

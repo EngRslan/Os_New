@@ -5,6 +5,39 @@
 extern unsigned int _lower_kernel_end;
 extern unsigned int _higher_kernel_start;
 extern unsigned int _kernel_end;
+page_directory_t * kernel_directory;
+
+void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical_frame,unsigned int is_user,unsigned int is_writable);
+void map_region(page_directory_t * dir, v_addr_t start,p_frame_t physical_frame,unsigned int total_pages,unsigned int is_user,unsigned int is_writable);
+void free_page(page_directory_t * dir,v_addr_t virtual_address){
+    page_table_directory_t * dir_entry = &dir->tables[DIR_INDEX(virtual_address)];
+    if(!dir_entry->present){
+        return;
+    }
+
+    page_table_t * pages_table = (page_table_t *)(dir_entry->frame << 12);
+    page_table_entry_t * page_entry = &pages_table->pages[PAGE_INDEX(virtual_address)];
+    if(!page_entry->present){
+        return;
+    }
+
+    page_entry->present = 0;
+    free_block((void *)(page_entry->frame << 12));
+    
+}
+void allocate_page(page_directory_t * dir,v_addr_t virtual_address,unsigned int is_user,unsigned int is_writable){
+    p_frame_t allocate_address = (p_frame_t) allocate_block();
+    map_page(dir,virtual_address,allocate_address,is_user,is_writable);
+}
+void allocate_region(page_directory_t * dir,v_addr_t virtual_address,unsigned int total_pages,unsigned int is_user,unsigned int is_writable){
+    
+    for (unsigned int i = 0; i < total_pages; i++)
+    {
+        allocate_page(dir,virtual_address,is_user,is_writable);
+        virtual_address += PAGE_SIZE;
+    }
+    
+}
 void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical_frame,unsigned int is_user,unsigned int is_writable){
     page_table_t * pages_table = NULL;
     if(!dir){
@@ -53,14 +86,22 @@ void vmm_install(){
     page_directory_t * default_dir = (page_directory_t *)allocate_block();
     //Map defualt directory
     memset(default_dir,0,sizeof(page_directory_t));
+    kernel_directory = default_dir;
     //map_page(default_dir,(v_addr_t)default_dir,(p_frame_t)default_dir,0,1);
     //Map First 4MB
-    map_region(default_dir,0,0,0x400000/PAGE_SIZE,0,1);
+    //map_region(default_dir,0,0,0x400000/PAGE_SIZE,0,1);
+    map_region(default_dir,0xb8000,0xb8000,8,0,1);
+
+    //map memory bitmap
+    map_region(default_dir,(v_addr_t)bitmap_start,(p_frame_t)bitmap_start,bitmap_size/PAGE_SIZE,0,1);
+
+    //map default kernel directory
+    map_page(default_dir,(v_addr_t)default_dir,(p_frame_t) default_dir,0,1);
     
     //MAP Kernel
     // unsigned int kernel_pages = (_kernel_end - _higher_kernel_start)/PAGE_SIZE;
     // if((_kernel_end - _higher_kernel_start)%PAGE_SIZE)kernel_pages++;
-    map_region(default_dir,(v_addr_t)&_higher_kernel_start,0,0x400000/PAGE_SIZE,0,1);
+    map_region(default_dir,(v_addr_t)&_higher_kernel_start,(unsigned int)&_lower_kernel_end,0x400000/PAGE_SIZE,0,1);
 
     //MAP PMM Bitmap Area
     // unsigned int pmm_size = bitmap_size/PAGE_SIZE;

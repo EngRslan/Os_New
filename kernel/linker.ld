@@ -51,6 +51,7 @@ SECTIONS
 		*(.bootstrap_stack)
 	}
 	_kernel_end = .;
+	_phy_kernel_end = . - _higher_kernel_start + _lower_kernel_end;
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */
 }

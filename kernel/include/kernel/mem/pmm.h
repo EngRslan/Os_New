@@ -14,6 +14,7 @@
     #define GET_BLOCK_NUMBER(addr)((BLOCK_ALIGN_TO_START(addr)/BLOCK_SIZE))
     
     extern unsigned int _kernel_end;
+    extern unsigned int _phy_kernel_end;
     extern unsigned int bitmap_size ;
     extern unsigned char * bitmap_start ;
 

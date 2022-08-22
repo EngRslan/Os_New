@@ -4,7 +4,7 @@
 
 int syscall_1(unsigned int ebx,unsigned int ecx,unsigned int edx,unsigned int esi)
 {
-    printf("syscall 0 called");
+    printf("\nsyscall 0 called");
     return 120;
 }
 

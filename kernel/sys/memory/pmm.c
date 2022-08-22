@@ -6,7 +6,7 @@
 unsigned int find_free_block();
 void mark_reserved_region(void * address,unsigned int len);
 // unsigned int * kaddress = &_kernel_end-0xC0000000;
-unsigned char * bitmap_start = ((unsigned char *)(&_kernel_end))-0xC0000000;
+unsigned char * bitmap_start = (unsigned char *)&_phy_kernel_end;
 void * memory_start ; 
 
 unsigned int total_blocks ;
@@ -25,7 +25,7 @@ void pmm_install(multiboot_memory_map_t * address,unsigned int length){
 
     for (unsigned char i = 0; i < mem_records; i++,address++)
     {
-        printf("\nmemory Addr:0x%x, Len:%x, Type:0x%x",(unsigned int)address->addr,(unsigned int)address->len,address->type);
+        // printf("\nmemory Addr:0x%x, Len:%x, Type:0x%x",(unsigned int)address->addr,(unsigned int)address->len,address->type);
         if(address->type != MULTIBOOT_MEMORY_AVAILABLE){
             mark_reserved_region((void *)((unsigned int)address->addr),(unsigned int)address->len);
         }
