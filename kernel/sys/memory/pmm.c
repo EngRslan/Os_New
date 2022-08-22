@@ -1,3 +1,4 @@
+#include <kernel/sys/kernel_address.h>
 #include <kernel/mem/pmm.h>
 #include <kernel/multiboot.h>
 #include <string.h>
@@ -6,8 +7,8 @@
 unsigned int find_free_block();
 void mark_reserved_region(void * address,unsigned int len);
 // unsigned int * kaddress = &_kernel_end-0xC0000000;
-unsigned char * bitmap_start = (unsigned char *)&_phy_kernel_end;
-void * memory_start ; 
+unsigned char * bitmap_start = (unsigned char *)&_physical_memory_bitmap_address;
+void * memory_start = (void *)&_physical_memory_free_address ; 
 
 unsigned int total_blocks ;
 unsigned int bitmap_size ;
@@ -20,8 +21,8 @@ void pmm_install(multiboot_memory_map_t * address,unsigned int length){
     bitmap_size = total_blocks / BLOCKS_PER_BUCKET;
     if(total_blocks % BLOCKS_PER_BUCKET)bitmap_size++;
     memset(bitmap_start,0,bitmap_size);
-    unsigned int alignedBitMap = (unsigned int)(bitmap_start+bitmap_size);
-    memory_start = (void *)BLOCK_ALIGN(alignedBitMap);
+    // unsigned int alignedBitMap = (unsigned int)(bitmap_start+bitmap_size);
+    // memory_start = (void *)BLOCK_ALIGN(alignedBitMap);
 
     for (unsigned char i = 0; i < mem_records; i++,address++)
     {
@@ -30,6 +31,8 @@ void pmm_install(multiboot_memory_map_t * address,unsigned int length){
             mark_reserved_region((void *)((unsigned int)address->addr),(unsigned int)address->len);
         }
     }
+
+    mark_reserved_region(0,(unsigned)&_physical_memory_free_address);
     
 }
 
@@ -37,7 +40,7 @@ void * allocate_block(){
     unsigned int block = find_free_block();
     // if(block > 0){
         SETBIT(block);
-        return (void *)(memory_start + (block*BLOCK_SIZE));
+        return (void *)(block*BLOCK_SIZE);
     // }
     // return (void * )0;
 }

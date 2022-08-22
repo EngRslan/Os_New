@@ -5,15 +5,16 @@
 #include <kernel/syscalls.h>
 #include <kernel/mem/pmm.h>
 #include <kernel/mem/vmm.h>
+
 #include <stdio.h>
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 void tick_handler(register_t * reg);
 void kbd_handler(register_t * reg);
 void kernel_main (unsigned long magic, multiboot_info_t * mbi);
-
 void kernel_main(unsigned long magic, multiboot_info_t * mbi) 
 {
+
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
     printf ("Invalid magic number: 0x%x\n", (unsigned) magic);

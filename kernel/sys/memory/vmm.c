@@ -1,10 +1,11 @@
+#include <kernel/sys/kernel_address.h>
 #include <kernel/mem/pmm.h>
 #include <kernel/mem/vmm.h>
 #include <stddef.h>
 #include <string.h>
-extern unsigned int _lower_kernel_end;
-extern unsigned int _higher_kernel_start;
-extern unsigned int _kernel_end;
+// extern unsigned int _lower_kernel_end;
+// extern unsigned int _higher_kernel_address;
+// extern unsigned int _kernel_end;
 page_directory_t * kernel_directory;
 
 void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical_frame,unsigned int is_user,unsigned int is_writable);
@@ -82,9 +83,10 @@ void switch_directory(page_directory_t * dir){
     unsigned int d = (unsigned int)dir;
     __asm__ __volatile__("mov %0,%%CR3"::"r"(d));
 }
+unsigned int virtual_kernel_heap_address = 0;
 void vmm_install(){
+    virtual_kernel_heap_address = (unsigned int)(&_virtual_memory_free_address + (1025*PAGE_SIZE));
     page_directory_t * default_dir = (page_directory_t *)allocate_block();
-    //Map defualt directory
     memset(default_dir,0,sizeof(page_directory_t));
     kernel_directory = default_dir;
     //map_page(default_dir,(v_addr_t)default_dir,(p_frame_t)default_dir,0,1);
@@ -93,21 +95,22 @@ void vmm_install(){
     map_region(default_dir,0xb8000,0xb8000,8,0,1);
 
     //map memory bitmap
-    map_region(default_dir,(v_addr_t)bitmap_start,(p_frame_t)bitmap_start,bitmap_size/PAGE_SIZE,0,1);
+    unsigned int map_size = (unsigned int)&_virtual_memory_free_address - (unsigned int)&_virtual_memory_bitmap_address;
+    map_region(default_dir,(v_addr_t)&_virtual_memory_bitmap_address,(p_frame_t)&_physical_memory_bitmap_address,map_size/PAGE_SIZE,0,1);
 
-    //map default kernel directory
-    map_page(default_dir,(v_addr_t)default_dir,(p_frame_t) default_dir,0,1);
+    // //map default kernel directory
+    // map_page(default_dir,(v_addr_t)default_dir,(p_frame_t) default_dir,0,1);
     
     //MAP Kernel
-    // unsigned int kernel_pages = (_kernel_end - _higher_kernel_start)/PAGE_SIZE;
-    // if((_kernel_end - _higher_kernel_start)%PAGE_SIZE)kernel_pages++;
-    map_region(default_dir,(v_addr_t)&_higher_kernel_start,(unsigned int)&_lower_kernel_end,0x400000/PAGE_SIZE,0,1);
+    unsigned int kernel_size = (unsigned int)&_virtual_memory_bitmap_address - (unsigned int)&_virtual_kernel_address;
+    map_region(default_dir,(v_addr_t)&_virtual_kernel_address,(unsigned int)&_physical_kernel_address,kernel_size/PAGE_SIZE,0,1);
 
     //MAP PMM Bitmap Area
     // unsigned int pmm_size = bitmap_size/PAGE_SIZE;
     // if(pmm_size%PAGE_SIZE)pmm_size++;
     // map_region(default_dir,(v_addr_t)_higher_kernel_start,(p_frame_t)bitmap_start,pmm_size,0,1);
-
+    //Map defualt directory
+    //map_page(default_dir,(v_addr_t)&_virtual_memory_free_address,(p_frame_t)default_dir,0,1);
     switch_directory(default_dir);
 
 }

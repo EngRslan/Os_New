@@ -4,7 +4,6 @@ MULTIBOOT_MEMORY_INFO	equ 1<<1
 MULTIBOOT_HEADER_MAGIC	equ 0x1BADB002
 MULTIBOOT_HEADER_FLAGS	equ MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO
 MULTIBOOT_CHECKSUM	    equ -(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
-HIGHER_HALF_KERNEL_ADDR equ 0xc0000000
 
 section .multiboot.data alloc write 
 align 4
@@ -28,18 +27,11 @@ stack_top:
 
 section .lower_half.text alloc
 global _start 
-extern _lower_kernel_end
-extern _kernel_start
-extern _kernel_end
-extern _higher_kernel_start
+extern _physical_kernel_address
 jmp _start
 map_identity:
     mov edi, boot_page_table1
     mov esi,0
-
-    ;; calculate total needed pages
-    mov eax , _lower_kernel_end
-    shr eax , 12
     mov ecx,1024
     ;;
     ;; Map
@@ -55,7 +47,7 @@ map_identity:
 
 map_Higer_kernel:
     mov edi, higher_kernel_page_table1
-    mov esi,_lower_kernel_end
+    mov esi,_physical_kernel_address
     mov ecx,1024
     ;;
     ;; Map
@@ -88,12 +80,12 @@ step3:
 	or ecx, 0x80010000
 	mov cr0 , ecx
 
-    lea  ecx, [hight_kernel_start]
+    lea  ecx, [higher_kernel_entry]
 	jmp ecx
     ;     jmp hight_kernel_start
 section .text
 extern  kernel_main
-hight_kernel_start:
+higher_kernel_entry:
     ; mov dword [boot_page_directory + 0], 0 
     ; mov ecx , cr3
 	; mov cr3, ecx

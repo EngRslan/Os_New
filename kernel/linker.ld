@@ -12,7 +12,7 @@ SECTIONS
 	/* First put the multiboot header, as it is required to be put very early
 	   early in the image or the bootloader won't recognize the file format.
 	   Next we'll put the .text section. */
-	_kernel_start = .;
+	_lower_kernel_address = .;
 	.multiboot.data :
 	{
 		*(.multiboot.data)
@@ -23,35 +23,37 @@ SECTIONS
 	.lower_half.bss :{
 		*(.lower_half.bss)
 	}
-	_lower_kernel_end = .;
+    _physical_kernel_address = .;
 	. = 3072M;
-	_higher_kernel_start = . ;
-	.text BLOCK(4K) :  AT(ADDR(.text) - 3072M + _lower_kernel_end)
+	_virtual_kernel_address = . ;
+	.text BLOCK(4K) :  AT(ADDR(.text) - 3072M + _physical_kernel_address)
 	{
 		*(.text)
 	}
  
 	/* Read-only data. */
-	.rodata BLOCK(4K) : AT(ADDR(.rodata) - 3072M + _lower_kernel_end)
+	.rodata BLOCK(4K) : AT(ADDR(.rodata) - 3072M + _physical_kernel_address)
 	{
 		*(.rodata)
 	}
  
 	/* Read-write data (initialized) */
-	.data BLOCK(4K) : AT(ADDR(.data) - 3072M + _lower_kernel_end)
+	.data BLOCK(4K) : AT(ADDR(.data) - 3072M + _physical_kernel_address)
 	{
 		*(.data)
 	}
  
 	/* Read-write data (uninitialized) and stack */
-	.bss BLOCK(4K) : AT(ADDR(.bss) - 3072M + _lower_kernel_end)
+	.bss BLOCK(4K) : AT(ADDR(.bss) - 3072M + _physical_kernel_address)
 	{
 		*(COMMON)
 		*(.bss)
 		*(.bootstrap_stack)
 	}
-	_kernel_end = .;
-	_phy_kernel_end = . - _higher_kernel_start + _lower_kernel_end;
-	/* The compiler may produce other sections, by default it will put them in
-	   a segment with the same name. Simply add stuff here as needed. */
+	. = ALIGN(4K) ;
+	_virtual_memory_bitmap_address = . ;
+	_physical_memory_bitmap_address = . - _virtual_kernel_address + _physical_kernel_address;
+	. += (4096M/4K)/8;
+	_virtual_memory_free_address = .;
+	_physical_memory_free_address = . - _virtual_kernel_address + _physical_kernel_address;
 }
