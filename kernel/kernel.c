@@ -5,7 +5,6 @@
 #include <kernel/syscalls.h>
 #include <kernel/mem/pmm.h>
 #include <kernel/mem/vmm.h>
-
 #include <stdio.h>
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
@@ -44,12 +43,12 @@ void kernel_main(unsigned long magic, multiboot_info_t * mbi)
   printf("Installed");
 
   printf("\nTest Virtual Memory .");
-//   allocate_page(kernel_directory,0x800000,0,1);
+  allocate_page(kernel_directory,0x800000,0,1);
 
-//   unsigned int * mm = (unsigned int *)0x800000;
-// *mm = 0xFFFFFFFF;
-//   free_page(kernel_directory,0x800000);
-// *mm = 0x0;
+  unsigned int * mm = (unsigned int *)0x800000;
+*mm = 0xFFFFFFFF;
+  free_page(kernel_directory,0x800000);
+*mm = 0x0;
 
   register_interrupt_handler(0x20,tick_handler);
   register_interrupt_handler(0x21,kbd_handler);
