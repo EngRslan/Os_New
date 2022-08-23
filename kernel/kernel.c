@@ -10,13 +10,13 @@
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 void tick_handler(register_t * reg);
 void kbd_handler(register_t * reg);
-void kernel_main (unsigned long magic, multiboot_info_t * mbi);
-void kernel_main(unsigned long magic, multiboot_info_t * mbi) 
+void kernel_main (uint64_t magic, multiboot_info_t * mbi);
+void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
 
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
-    printf ("Invalid magic number: 0x%x\n", (unsigned) magic);
+    printf ("Invalid magic number: 0x%x\n", (uint32_t) magic);
     return;
   }
 
@@ -45,15 +45,15 @@ void kernel_main(unsigned long magic, multiboot_info_t * mbi)
   printf("\nTest Virtual Memory .");
   allocate_page(kernel_directory,0x800000,0,1);
 
-  unsigned int * mm = (unsigned int *)0x800000;
+  uint32_t * mm = (uint32_t *)0x800000;
   *mm = 0xFFFFFFFF;
-  free_page(kernel_directory,0x800000);
-*mm = 0x0;
+  //free_page(kernel_directory,0x800000);
+  *mm = 0x0;
 
   register_interrupt_handler(0x20,tick_handler);
   register_interrupt_handler(0x21,kbd_handler);
 
-  int a;
+  int32_t a;
   __asm__ __volatile__("int $0x80":"=a"(a):"a"(0),"b"(0x120),"d"(0x160));
   
   printf("\nsuccessfully halted");
@@ -107,7 +107,7 @@ char kbdus[128] = {
 };
 
 void kbd_handler(register_t * reg){
-  int i, scancode;
+  int32_t i, scancode;
   for(i = 1000; i > 0; i++) {
         // Check if scan code is ready
         if((inportb(0x64) & 1) == 0) continue;

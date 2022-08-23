@@ -1,3 +1,4 @@
+#include <kernel/types.h>
 #include <kernel/sys/kernel_address.h>
 #include <kernel/mem/pmm.h>
 #include <kernel/mem/vmm.h>
@@ -8,8 +9,8 @@ page_directory_t * kernel_directory;
 page_table_t * kernel_tables_map;
 int is_pagging_done = 0;
 
-void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical_frame,unsigned int is_user,unsigned int is_writable);
-void map_region(page_directory_t * dir, v_addr_t start,p_frame_t physical_frame,unsigned int total_pages,unsigned int is_user,unsigned int is_writable);
+void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical_frame,uint32_t is_user,uint32_t is_writable);
+void map_region(page_directory_t * dir, v_addr_t start,p_frame_t physical_frame,uint32_t total_pages,uint32_t is_user,uint32_t is_writable);
 void flush_tlb_entry(v_addr_t address)
 {
     __asm__ __volatile__ ("cli; invlpg (%0); sti" : : "r"(address) );
@@ -30,32 +31,32 @@ void free_page(page_directory_t * dir,v_addr_t virtual_address){
     free_block((void *)(page_entry->frame << 12));
     flush_tlb_entry(virtual_address);
 }
-void allocate_page(page_directory_t * dir,v_addr_t virtual_address,unsigned int is_user,unsigned int is_writable){
+void allocate_page(page_directory_t * dir,v_addr_t virtual_address,uint32_t is_user,uint32_t is_writable){
     p_frame_t allocate_address = (p_frame_t) allocate_block();
     map_page(dir,virtual_address,allocate_address,is_user,is_writable);
 }
-void allocate_region(page_directory_t * dir,v_addr_t virtual_address,unsigned int total_pages,unsigned int is_user,unsigned int is_writable){
+void allocate_region(page_directory_t * dir,v_addr_t virtual_address,uint32_t total_pages,uint32_t is_user,uint32_t is_writable){
     
-    for (unsigned int i = 0; i < total_pages; i++)
+    for (uint32_t i = 0; i < total_pages; i++)
     {
         allocate_page(dir,virtual_address,is_user,is_writable);
         virtual_address += PAGE_SIZE;
     }
     
 }
-void map_dir_entry(page_table_directory_t * pde,p_frame_t frame,unsigned int is_user,unsigned int is_writable){
+void map_dir_entry(page_table_directory_t * pde,p_frame_t frame,uint32_t is_user,uint32_t is_writable){
     pde->present = 1;
     pde->rw = is_writable;
     pde->user = is_user;
-    pde->frame = (unsigned int)frame >> 12;
+    pde->frame = (uint32_t)frame >> 12;
 }
-void map_table_entry(page_table_entry_t * pte,p_frame_t frame,unsigned int is_user,unsigned int is_writable){
+void map_table_entry(page_table_entry_t * pte,p_frame_t frame,uint32_t is_user,uint32_t is_writable){
     pte->present = 1;
     pte->rw = is_writable;
     pte->user = is_user;
-    pte->frame = (unsigned int)frame >> 12;
+    pte->frame = (uint32_t)frame >> 12;
 }
-page_table_t * allocate_virtual_table(page_directory_t * dir, unsigned int pdi,unsigned int is_user,unsigned int is_writable){
+page_table_t * allocate_virtual_table(page_directory_t * dir, uint32_t pdi,uint32_t is_user,uint32_t is_writable){
     page_table_t * pages_table = NULL;
     page_table_directory_t * page_dir_entry = &dir->tables[pdi];
     void * ph_page_table = (page_table_t *) allocate_block();
@@ -75,14 +76,14 @@ page_table_t * allocate_virtual_table(page_directory_t * dir, unsigned int pdi,u
     memset(pages_table,0,sizeof(page_table_t)); 
     return pages_table;
 }
-void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical_frame,unsigned int is_user,unsigned int is_writable){
+void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical_frame,uint32_t is_user,uint32_t is_writable){
     page_table_t * pages_table = NULL;
     if(!dir){
         return ;
     }
 
-    unsigned int table_index = DIR_INDEX(virtual_address);
-    unsigned int page_index = PAGE_INDEX(virtual_address);
+    uint32_t table_index = DIR_INDEX(virtual_address);
+    uint32_t page_index = PAGE_INDEX(virtual_address);
 
     page_table_directory_t * page_dir_entry = &dir->tables[table_index];
 
@@ -93,17 +94,17 @@ void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical
             pages_table = (page_table_t *) GET_VIRTUAL_TABLE_ADDRESS(virtual_address);
         }
         else{
-            pages_table = (page_table_t *)((unsigned int)page_dir_entry->frame << 12);
+            pages_table = (page_table_t *)((uint32_t)page_dir_entry->frame << 12);
         }
     }
 
     page_table_entry_t * page_entry = &pages_table->pages[page_index];
     map_table_entry(page_entry,physical_frame,is_user,is_writable);
 }
-void map_region(page_directory_t * dir, v_addr_t start,p_frame_t physical_frame,unsigned int total_pages,unsigned int is_user,unsigned int is_writable){
+void map_region(page_directory_t * dir, v_addr_t start,p_frame_t physical_frame,uint32_t total_pages,uint32_t is_user,uint32_t is_writable){
     start = start & 0xFFFFF000;
 
-    for (unsigned int i = 0; i < total_pages; i++)
+    for (uint32_t i = 0; i < total_pages; i++)
     {
         map_page(dir,start,physical_frame,is_user,is_writable);
         start += PAGE_SIZE;
@@ -112,7 +113,7 @@ void map_region(page_directory_t * dir, v_addr_t start,p_frame_t physical_frame,
     
 }
 void switch_directory(page_directory_t * dir){
-    unsigned int d = (unsigned int)dir;
+    uint32_t d = (uint32_t)dir;
     __asm__ __volatile__("mov %0,%%CR3"::"r"(d));
 }
 void vmm_install(){
@@ -128,7 +129,7 @@ void vmm_install(){
     dir400->present = 1,
     dir400->user = 0;
     dir400->rw = 1;
-    dir400->frame = (unsigned int)kernel_tables_map >> 12;
+    dir400->frame = (uint32_t)kernel_tables_map >> 12;
 
 
     //Map defualt directory
@@ -138,12 +139,12 @@ void vmm_install(){
     map_region(default_dir,0xb8000,0xb8000,8,0,1);
 
     //map memory bitmap AS IS
-    unsigned int map_size = (unsigned int)&_virtual_memory_free_address - (unsigned int)&_virtual_memory_bitmap_address;
+    uint32_t map_size = (uint32_t)&_virtual_memory_free_address - (uint32_t)&_virtual_memory_bitmap_address;
     map_region(default_dir,(v_addr_t)&_physical_memory_bitmap_address,(p_frame_t)&_physical_memory_bitmap_address,map_size/PAGE_SIZE,0,1);
     
     //MAP Kernel
-    unsigned int kernel_size = (unsigned int)&_virtual_memory_bitmap_address - (unsigned int)&_virtual_kernel_address;
-    map_region(default_dir,(v_addr_t)&_virtual_kernel_address,(unsigned int)&_physical_kernel_address,kernel_size/PAGE_SIZE,0,1);
+    uint32_t kernel_size = (uint32_t)&_virtual_memory_bitmap_address - (uint32_t)&_virtual_kernel_address;
+    map_region(default_dir,(v_addr_t)&_virtual_kernel_address,(uint32_t)&_physical_kernel_address,kernel_size/PAGE_SIZE,0,1);
     
 
     //map_region(default_dir,(v_addr_t)&_physical_memory_free_address,(p_frame_t)&_physical_memory_free_address,1024,0,1);

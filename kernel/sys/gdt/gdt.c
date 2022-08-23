@@ -1,7 +1,8 @@
+#include <kernel/types.h>
 #include <kernel/gdt.h>
 #include <string.h>
 
-extern void gdt_load(unsigned int gdt_addr);
+extern void gdt_load(uint32_t gdt_addr);
 
 gdt_entry_t gdt_entries[MAX_GDT_ENTRIES];
 gdt_t gdt;
@@ -11,7 +12,7 @@ void gdt_install(void){
     memset(&gdt,0x0,sizeof(gdt_t));
 
     gdt.limit = sizeof(gdt_entries) - 1;
-    gdt.base = (unsigned int)gdt_entries;
+    gdt.base = (uint32_t)gdt_entries;
     
     //Set Null Descriptior
     gdt_set_entry(0,0,0,0,0);
@@ -51,11 +52,11 @@ void gdt_install(void){
     //Set User Data
     gdt_set_entry(4,0,0xFFFFFFFF,0b11110010,0b11001111);
 
-    gdt_load((unsigned int)&gdt);
+    gdt_load((uint32_t)&gdt);
 }
 
 
-void gdt_set_entry(int index,unsigned int base, unsigned int limit,unsigned char access, unsigned char gran){
+void gdt_set_entry(int index,uint32_t base, uint32_t limit,uint8_t access, uint8_t gran){
     gdt_entry_t * entry = &gdt_entries[index];
 
     // Set Entry Base 

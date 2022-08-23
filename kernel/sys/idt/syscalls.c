@@ -1,8 +1,9 @@
+#include <kernel/types.h>
 #include <kernel/isr.h>
 #include <kernel/system.h>
 #include <stdio.h>
 
-int syscall_1(unsigned int ebx,unsigned int ecx,unsigned int edx,unsigned int esi)
+int syscall_1(uint32_t ebx,uint32_t ecx,uint32_t edx,uint32_t esi)
 {
     printf("\nsyscall 0 called");
     return 120;
