@@ -45,8 +45,8 @@ void kernel_main(unsigned long magic, multiboot_info_t * mbi)
   printf("\nTest Virtual Memory .");
   allocate_page(kernel_directory,0x800000,0,1);
 
-  unsigned int * mm = (unsigned int *)0x800000;
-*mm = 0xFFFFFFFF;
+  unsigned int * mm = (unsigned int *)0x801000;
+  *mm = 0xFFFFFFFF;
   free_page(kernel_directory,0x800000);
 *mm = 0x0;
 
