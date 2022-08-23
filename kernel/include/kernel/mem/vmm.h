@@ -3,7 +3,8 @@
 #define PAGE_SIZE 0x1000
 #define DIR_INDEX(vaddr)((v_addr_t)vaddr >> 22)
 #define PAGE_INDEX(vaddr)(((v_addr_t)vaddr >> 12)&0x3FF)
-#define PHYSICAL_ADDRESS(entry)(* entry & ~0xFFF)
+#define GET_VIRTUAL_ADDRESS(pde,pte)((pde << 22)|(pte << 12)|0)
+#define GET_VIRTUAL_TABLE_ADDRESS(pdi)(GET_VIRTUAL_ADDRESS(0x301,pdi))
 
 typedef unsigned int p_frame_t;
 typedef unsigned int v_addr_t;
