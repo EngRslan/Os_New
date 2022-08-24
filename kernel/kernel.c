@@ -7,6 +7,7 @@
 #include <kernel/mem/pmm.h>
 #include <kernel/mem/vmm.h>
 #include <kernel/mem/kheap.h>
+#include <kernel/drivers/vga.h>
 #include <stdio.h>
 
 void tick_handler(register_t * reg);
@@ -22,16 +23,18 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   }
 
   // printf("addr: 0x%x, size: 0x%x, num: 0x%x",mbi->u.elf_sec.addr,mbi->u.elf_sec.size,mbi->u.elf_sec.num);
-  
+  if(BITREAD(mbi->flags,12)){
+    vga_install(mbi->framebuffer_addr,mbi->framebuffer_width,mbi->framebuffer_height,mbi->framebuffer_bpp);
+  }
   printf("Installing GDT .");
   gdt_install();
   printf("installed");
 
-  printf("\nInstalling IDT .");
+  printf("\n\rInstalling IDT .");
   idt_install();
   syscalls_install();
   printf("installed");
-  printf("\nInstalling Memory Map .");
+  printf("\n\rInstalling Memory Map .");
   if(BITREAD(mbi->flags,6)){
     pmm_install((multiboot_memory_map_t *)mbi->mmap_addr,mbi->mmap_length);
     printf("installed");
@@ -39,7 +42,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
     printf("Cannot install memory FAILED");
   }
   
-  printf("\nInstall Virtual Memory .");
+  printf("\n\rInstall Virtual Memory .");
   vmm_install();
   printf("Installed");
 
@@ -51,7 +54,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   // free_page(kernel_directory,0x800000);
   // *mm = 0x0;
 
-  printf("\nInstall Kernel Heap ");
+  printf("\n\rInstall Kernel Heap ");
   kheap_install();
   printf("installed");
 
@@ -62,13 +65,16 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   ptr_t all2 = kalloc(sizeof(int));
   ptr_t all3 = kalloc(sizeof(int));
   ptr_t all4 = kalloc(sizeof(int));
+  kfree(all2);
+  kfree(all4);
+  kfree(all3);
   ptr_t all5 = kalloc(sizeof(int));
   ptr_t all6 = kalloc(0x1200);
 
   int32_t a;
   __asm__ __volatile__("int $0x80":"=a"(a):"a"(0),"b"(0x120),"d"(0x160));
   
-  printf("\nsuccessfully halted");
+  printf("\n\rsuccessfully halted");
   for (;;) { }
   
 
@@ -133,7 +139,7 @@ void kbd_handler(register_t * reg){
         }
         else {
             // Key down
-            printf("Key pressed %c\n", kbdus[scancode]);
+            printf("Key pressed %c\n\r", kbdus[scancode]);
         }
     }
 }

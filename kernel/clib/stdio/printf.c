@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <kernel/drivers/vga.h>
 
 /* The number of columns. */
 #define COLUMNS                 80
@@ -17,25 +18,25 @@ int xpos;
 /* Save the Y position. */
 int ypos;
 
-static void putchar (int c)
-{
-  if (c == '\n' || c == '\r')
-    {
-    newline:
-      xpos = 0;
-      ypos++;
-      if (ypos >= LINES)
-        ypos = 0;
-      return;
-    }
+// static void putchar (int c)
+// {
+//   if (c == '\n' || c == '\r')
+//     {
+//     newline:
+//       xpos = 0;
+//       ypos++;
+//       if (ypos >= LINES)
+//         ypos = 0;
+//       return;
+//     }
 
-  *(video + (xpos + ypos * COLUMNS) * 2) = c & 0xFF;
-  *(video + (xpos + ypos * COLUMNS) * 2 + 1) = ATTRIBUTE;
+//   *(video + (xpos + ypos * COLUMNS) * 2) = c & 0xFF;
+//   *(video + (xpos + ypos * COLUMNS) * 2 + 1) = ATTRIBUTE;
 
-  xpos++;
-  if (xpos >= COLUMNS)
-    goto newline;
-}
+//   xpos++;
+//   if (xpos >= COLUMNS)
+//     goto newline;
+// }
 
 void printf(const char *format, ...)
 {
@@ -48,7 +49,7 @@ void printf(const char *format, ...)
     while ((c = *format++) != 0)
     {
         if (c != '%')
-            putchar(c);
+            print_char(c);
         else
         {
             char *p, *p2;
@@ -86,13 +87,13 @@ void printf(const char *format, ...)
                 for (p2 = p; *p2; p2++)
                     ;
                 for (; p2 < p + pad; p2++)
-                    putchar(pad0 ? '0' : ' ');
+                    print_char(pad0 ? '0' : ' ');
                 while (*p)
-                    putchar(*p++);
+                    print_char(*p++);
                 break;
 
             default:
-                putchar(*((int *)arg++));
+                print_char(*((int *)arg++));
                 break;
             }
         }
