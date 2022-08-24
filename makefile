@@ -18,6 +18,8 @@ kernel:
 
 run:
 	qemu-system-i386 -boot d -drive file=$(ISO_NAME),media=cdrom,if=ide -s -S
+bochs: build
+	bochs -q
 .PHONY: kernel clean
 clean:
 	$(MAKE) --directory=$(KERNEL_DIR) clean

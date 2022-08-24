@@ -48,6 +48,10 @@ char *exception_messages[32] =
     "Reserved"
 };
 
+void lidt(uint32_t ptr){
+    __asm__ __volatile__("lidt (%0)"::"r"(ptr));
+}
+
 void idt_install(){
     memset(idt_entries, 0, sizeof(idt_entries));
     idt_ptr.base = (uint32_t)idt_entries;
@@ -105,7 +109,8 @@ void idt_install(){
     idt_set_entry(47, (uint32_t)irq15, 0x08, 0x8E);
     idt_set_entry(128, (uint32_t)exception128, 0x08, 0x8E);
     
-    idt_flush((uint32_t)&(idt_ptr));
+    // idt_flush((uint32_t)&(idt_ptr));
+    lidt((uint32_t)&(idt_ptr));
     asm volatile("sti");
 }
 

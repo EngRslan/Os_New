@@ -16,7 +16,7 @@ CSRC= kernel.c \
 	$(MEM_DIR)/vmm.c $(MEM_DIR)/pmm.c \
   	$(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c
 
-SSRC= kernel_entry.asm $(GDT_DIR)/gdt_helper.asm $(IDT_DIR)/idt_helper.asm $(IDT_DIR)/idt_exceptions.asm $(IRQ_DIR)/idt_irq.asm
+SSRC= kernel_entry.asm $(IDT_DIR)/idt_exceptions.asm $(IRQ_DIR)/idt_irq.asm
 OBJS= $(CSRC:.c=.o) $(SSRC:.asm=.o)
 
 build: $(OBJS)

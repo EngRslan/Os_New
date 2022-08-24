@@ -1,4 +1,5 @@
 #include <kernel/multiboot.h>
+#include <kernel/bits.h>
 #include <kernel/gdt.h>
 #include <kernel/idt.h>
 #include <kernel/isr.h>
@@ -7,7 +8,6 @@
 #include <kernel/mem/vmm.h>
 #include <stdio.h>
 
-#define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 void tick_handler(register_t * reg);
 void kbd_handler(register_t * reg);
 void kernel_main (uint64_t magic, multiboot_info_t * mbi);
@@ -31,7 +31,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   syscalls_install();
   printf("installed");
   printf("\nInstalling Memory Map .");
-  if(CHECK_FLAG(mbi->flags,6)){
+  if(BITREAD(mbi->flags,6)){
     pmm_install((multiboot_memory_map_t *)mbi->mmap_addr,mbi->mmap_length);
     printf("installed");
   }else{
@@ -47,8 +47,8 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
 
   uint32_t * mm = (uint32_t *)0x800000;
   *mm = 0xFFFFFFFF;
-  //free_page(kernel_directory,0x800000);
-  *mm = 0x0;
+  free_page(kernel_directory,0x800000);
+  // *mm = 0x0;
 
   register_interrupt_handler(0x20,tick_handler);
   register_interrupt_handler(0x21,kbd_handler);

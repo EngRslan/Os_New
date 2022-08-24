@@ -2,11 +2,23 @@
 #include <kernel/gdt.h>
 #include <string.h>
 
-extern void gdt_load(uint32_t gdt_addr);
 
 gdt_entry_t gdt_entries[MAX_GDT_ENTRIES];
 gdt_t gdt;
 
+void lgdt(uint32_t ptr){
+    __asm__ __volatile__("\
+        lgdtl (%0); \
+        movl %1 , %%ds; \
+        movl %1 , %%es; \
+        movl %1 , %%fs; \
+        movl %1 , %%gs; \
+        movl %1 , %%ss; \
+        jmp $0x08, $fix_cs; \
+        fix_cs:; \
+    "::"r"(ptr),"r"(0x10));
+    return;
+}
 void gdt_install(void){
     memset(&gdt_entries,0x0,sizeof(gdt_entries));
     memset(&gdt,0x0,sizeof(gdt_t));
@@ -52,7 +64,7 @@ void gdt_install(void){
     //Set User Data
     gdt_set_entry(4,0,0xFFFFFFFF,0b11110010,0b11001111);
 
-    gdt_load((uint32_t)&gdt);
+    lgdt((uint32_t)&gdt);
 }
 
 

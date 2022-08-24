@@ -62,7 +62,6 @@ map_Higer_kernel:
     ret
 
 _start:
-    xchg bx,bx
     push eax
     push ebx
     call map_identity
