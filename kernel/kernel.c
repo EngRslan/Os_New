@@ -6,6 +6,7 @@
 #include <kernel/syscalls.h>
 #include <kernel/mem/pmm.h>
 #include <kernel/mem/vmm.h>
+#include <kernel/mem/kheap.h>
 #include <stdio.h>
 
 void tick_handler(register_t * reg);
@@ -42,16 +43,27 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   vmm_install();
   printf("Installed");
 
-  printf("\nTest Virtual Memory .");
-  allocate_page(kernel_directory,0x800000,0,1);
+  // printf("\nTest Virtual Memory .");
+  // allocate_page(kernel_directory,0x800000,0,1);
 
-  uint32_t * mm = (uint32_t *)0x800000;
-  *mm = 0xFFFFFFFF;
-  free_page(kernel_directory,0x800000);
+  // uint32_t * mm = (uint32_t *)0x800000;
+  // *mm = 0xFFFFFFFF;
+  // free_page(kernel_directory,0x800000);
   // *mm = 0x0;
+
+  printf("\nInstall Kernel Heap ");
+  kheap_install();
+  printf("installed");
 
   register_interrupt_handler(0x20,tick_handler);
   register_interrupt_handler(0x21,kbd_handler);
+
+  ptr_t all = kalloc(sizeof(int));
+  ptr_t all2 = kalloc(sizeof(int));
+  ptr_t all3 = kalloc(sizeof(int));
+  ptr_t all4 = kalloc(sizeof(int));
+  ptr_t all5 = kalloc(sizeof(int));
+  ptr_t all6 = kalloc(0x1200);
 
   int32_t a;
   __asm__ __volatile__("int $0x80":"=a"(a):"a"(0),"b"(0x120),"d"(0x160));

@@ -8,4 +8,8 @@ typedef unsigned int uint32_t;
 typedef int int32_t;
 typedef unsigned long uint64_t;
 typedef long int64_t;
+
+typedef unsigned int * intptr_t;
+typedef void * ptr_t;
+typedef char * string_t;
 #endif

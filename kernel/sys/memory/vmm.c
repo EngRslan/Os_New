@@ -35,6 +35,11 @@ void allocate_page(page_directory_t * dir,v_addr_t virtual_address,uint32_t is_u
     p_frame_t allocate_address = (p_frame_t) allocate_block();
     map_page(dir,virtual_address,allocate_address,is_user,is_writable);
 }
+
+void kallocate_page(v_addr_t virtual_address){
+    allocate_page(kernel_directory,virtual_address,0,1);
+}
+
 void allocate_region(page_directory_t * dir,v_addr_t virtual_address,uint32_t total_pages,uint32_t is_user,uint32_t is_writable){
     
     for (uint32_t i = 0; i < total_pages; i++)
@@ -91,7 +96,7 @@ void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical
         pages_table = allocate_virtual_table(dir,table_index,is_user,is_writable);
     }else{
         if(is_pagging_done){
-            pages_table = (page_table_t *) GET_VIRTUAL_TABLE_ADDRESS(virtual_address);
+            pages_table = (page_table_t *) GET_VIRTUAL_TABLE_ADDRESS(table_index);
         }
         else{
             pages_table = (page_table_t *)((uint32_t)page_dir_entry->frame << 12);

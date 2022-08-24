@@ -51,6 +51,7 @@ extern page_directory_t * kernel_directory;
 
 void vmm_install();
 void allocate_page(page_directory_t * dir,v_addr_t virtual_address,uint32_t is_user,uint32_t is_writable);
+void kallocate_page(v_addr_t virtual_address);
 void allocate_region(page_directory_t * dir,v_addr_t virtual_address,uint32_t total_pages,uint32_t is_user,uint32_t is_writable);
 void free_page(page_directory_t * dir,v_addr_t virtual_address);
 #endif
