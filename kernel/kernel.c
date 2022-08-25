@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 void tick_handler(register_t * reg);
-void kbd_handler(register_t * reg);
+void keyboard_event(keyboard_event_t event);
 void kernel_main (uint64_t magic, multiboot_info_t * mbi);
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -80,6 +80,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   
   printf("\n\rOS successfully Installed");
   printf("\n\rcmd > ");
+  register_keyboard_event_handler(keyboard_event);
   for (;;) { }
   
 
@@ -129,22 +130,7 @@ char kbdus[128] = {
     0,  /* All other keys are undefined */
 };
 
-void kbd_handler(register_t * reg){
-  int32_t i, scancode;
-  for(i = 1000; i > 0; i++) {
-        // Check if scan code is ready
-        if((inportb(0x64) & 1) == 0) continue;
-        // Get the scan code
-        scancode = inportb(0x60);
-        break;
-    }
-    if(i > 0) {
-        if(scancode & 0x80) {
-            // Key release
-        }
-        else {
-            // Key down
-            printf("Key pressed %c\n\r", kbdus[scancode]);
-        }
-    }
+void keyboard_event(keyboard_event_t event)
+{
+    printf("\n\rchar : %d , is_Shift: %d , is_ALT : %d, isCtrl: %d",(uint32_t)event.ascii,(uint32_t)event.shift,(uint32_t)event.alt,(uint32_t)event.ctrl);
 }
