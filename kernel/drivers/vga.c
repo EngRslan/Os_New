@@ -8,6 +8,7 @@
 #define PAINT(a,b) (((b & 0xFF) << 8) | (a & 0xFF))
 
 uint16_t * buffer_address=0;
+uint32_t buffer_length = 0;
 uint16_t columns=0, rows=0;
 uint8_t bpp=0;
 uint16_t x=0,y=0;
@@ -16,9 +17,8 @@ uint8_t foreground = VGA_COLOR_LIGHTGRAY;
 uint8_t background = VGA_COLOR_BLUE;
 
 void clear_screen(){
-    uint32_t pitch = columns * rows;
 
-    for (uint32_t i = 0; i < pitch; i++)
+    for (uint32_t i = 0; i < buffer_length; i++)
     {
         buffer_address[i] = PAINT(' ',TEXTSTYLE(foreground,1,background,0));
     }
@@ -30,6 +30,7 @@ void vga_install(uint32_t _buffer_addr,uint16_t _columns, uint16_t _rows,uint8_t
     columns = _columns;
     rows = _rows;
     bpp = _bpp;
+    buffer_length = columns * rows;
     clear_screen();
 }
 
@@ -46,6 +47,20 @@ void update_cursor() {
     outportb(0x3D5, curr_pos);
 }
 void scroll(){
+    for (uint16_t i = 1; i < rows; i++)
+    {
+        for (uint16_t j = 0; j < columns; j++)
+        {
+            uint32_t from = (uint32_t)PIXEL(j,(i-1));
+            uint32_t to = (uint32_t)PIXEL(j,i);
+            PIXEL(j,(i-1)) = PIXEL(j,i);
+        }
+    }
+
+    for (uint16_t i = 0; i < columns; i++)
+    {
+        PIXEL(i,(rows-1)) = PAINT(' ',TEXTSTYLE(foreground,1,background,0));
+    }
     
 }
 void print_char(char c){
@@ -74,8 +89,9 @@ void print_char(char c){
         y++;
     }
 
-    if(y>rows){
+    if(y>=rows){
         y -- ;
+        x= 0;
         scroll();
     }
 

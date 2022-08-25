@@ -8,6 +8,7 @@
 #include <kernel/mem/vmm.h>
 #include <kernel/mem/kheap.h>
 #include <kernel/drivers/vga.h>
+#include <kernel/drivers/keyboard.h>
 #include <stdio.h>
 
 void tick_handler(register_t * reg);
@@ -58,23 +59,27 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   kheap_install();
   printf("installed");
 
-  register_interrupt_handler(0x20,tick_handler);
-  register_interrupt_handler(0x21,kbd_handler);
+  printf("\n\rInstall Keyboard Driver ");
+  keyboard_install();
+  printf("installed");
 
-  ptr_t all = kalloc(sizeof(int));
-  ptr_t all2 = kalloc(sizeof(int));
-  ptr_t all3 = kalloc(sizeof(int));
-  ptr_t all4 = kalloc(sizeof(int));
-  kfree(all2);
-  kfree(all4);
-  kfree(all3);
-  ptr_t all5 = kalloc(sizeof(int));
-  ptr_t all6 = kalloc(0x1200);
+  register_interrupt_handler(0x20,tick_handler);
+
+  // ptr_t all = kalloc(sizeof(int));
+  // ptr_t all2 = kalloc(sizeof(int));
+  // ptr_t all3 = kalloc(sizeof(int));
+  // ptr_t all4 = kalloc(sizeof(int));
+  // kfree(all2);
+  // kfree(all4);
+  // kfree(all3);
+  // ptr_t all5 = kalloc(sizeof(int));
+  // ptr_t all6 = kalloc(0x1200);
 
   int32_t a;
   __asm__ __volatile__("int $0x80":"=a"(a):"a"(0),"b"(0x120),"d"(0x160));
   
-  printf("\n\rsuccessfully halted");
+  printf("\n\rOS successfully Installed");
+  printf("\n\rcmd > ");
   for (;;) { }
   
 
