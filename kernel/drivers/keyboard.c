@@ -12,6 +12,7 @@
 #define KEY_CODE_SCROLL_LOCK    0x46
 
 keyboard_event_handler_t key_down_handler = NULL;
+keyboard_event_handler_t key_up_handler = NULL;
 
 struct
 {
@@ -54,9 +55,6 @@ uint8_t is_control_code(int32_t scancode){
         case KEY_CODE_ALT_LEFT:
         case KEY_CODE_SHIFT_LEFT:
         case KEY_CODE_SHIFT_RIGHT:
-        case KEY_CODE_CAPS_LOCK:
-        case KEY_CODE_NUM_LOCK:
-        case KEY_CODE_SCROLL_LOCK:
             return 1;
         default:
 
@@ -76,6 +74,23 @@ void set_function_key(uint32_t scancode,uint8_t value){
         case KEY_CODE_SHIFT_RIGHT:
             scan_status.shift = value;
             return;
+    }   
+}
+uint8_t is_toggle_key(uint32_t scancode){
+    switch (scancode)
+    {
+        case KEY_CODE_CAPS_LOCK:
+        case KEY_CODE_NUM_LOCK:
+        case KEY_CODE_SCROLL_LOCK:
+            return 1;
+        default:
+
+            return 0;
+    }   
+}
+void set_toogle_key(uint32_t scancode,uint8_t value){
+    switch (scancode)
+    {
         case KEY_CODE_CAPS_LOCK:
             scan_status.caps_lock = value;
             return;
@@ -87,8 +102,7 @@ void set_function_key(uint32_t scancode,uint8_t value){
             return;
     }   
 }
-
-void map_and_fire(uint32_t scancode,uint8_t event_type){
+void map_and_fire(uint32_t scancode,keyboard_event_handler_t _event_handler){
     char ascii_char = qwerty_scan_table[scancode];
     if((scan_status.shift || scan_status.caps_lock) && isalpha(ascii_char)){
         ascii_char = toupper(ascii_char);
@@ -101,7 +115,9 @@ void map_and_fire(uint32_t scancode,uint8_t event_type){
     keyboard_event.alt = scan_status.alt;
     keyboard_event.shift = scan_status.shift;
     keyboard_event.key_code = ascii_char;
-    key_down_handler(keyboard_event);
+    if(_event_handler){
+        _event_handler(keyboard_event);
+    }
 }
 void handle_scan_code(int32_t scancode){
     if(scancode & 0x80) {
@@ -109,8 +125,12 @@ void handle_scan_code(int32_t scancode){
             set_function_key(scancode & 0x7F,0);
             return;
         }
+        if(is_toggle_key(scancode & 0x7F)){
+            set_toogle_key(scancode & 0x7F,scan_status.caps_lock?0:1);
+            return;
+        }
         
-        map_and_fire(scancode & 0x7F,KEY_UP_EVENT);
+        map_and_fire(scancode & 0x7F,key_up_handler);
     }
     else 
     {
@@ -118,7 +138,7 @@ void handle_scan_code(int32_t scancode){
             set_function_key(scancode,1);
             return;
         }
-        //map_and_fire(scancode,KEY_DOWN_EVENT);
+        map_and_fire(scancode,key_down_handler);
     }
 
 }
@@ -141,6 +161,9 @@ void keyboard_install(){
     register_interrupt_handler(IRQ_BASE + 1,keyboard_handler);
 }
 
-void register_keyboard_event_handler(keyboard_event_handler_t _key_down_handler){
-    key_down_handler = _key_down_handler;
+void register_keyboard_event_handler(keyboard_event_handler_t _handler,uint8_t event_type){
+    if(event_type == KEY_UP_EVENT)
+        key_up_handler = _handler;
+    else if(event_type == KEY_DOWN_EVENT)
+        key_down_handler = _handler;
 }

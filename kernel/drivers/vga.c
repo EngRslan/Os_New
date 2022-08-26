@@ -97,3 +97,11 @@ void print_char(char c){
 
     update_cursor();
 }
+
+void print_string(string_t str){
+    while (*str)
+    {
+        print_char(*str);
+        str++;
+    }
+}

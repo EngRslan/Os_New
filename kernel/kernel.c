@@ -9,6 +9,9 @@
 #include <kernel/mem/kheap.h>
 #include <kernel/drivers/vga.h>
 #include <kernel/drivers/keyboard.h>
+#include <kernel/drivers/serial.h>
+#include <kernel/types.h>
+#include <logger.h>
 #include <stdio.h>
 
 void tick_handler(register_t * reg);
@@ -16,10 +19,23 @@ void keyboard_event(keyboard_event_t event);
 void kernel_main (uint64_t magic, multiboot_info_t * mbi);
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
+  
+  logger_install(LOG_LEVEL_TRACE);
+  string_t logo = "\
+   _____ ______   _____  ____      \n\r \
+ | ____/ ___\\ \\ / / _ \\/ ___|  \n\r \
+ |  _|| |  _ \\ V / | | \\___ \\  \n\r \
+ | |__| |_| | | || |_| |___) |    \n\r \
+ |_____\\____| |_| \\___/|____/   FUTURE IS NOW\n\r \
+                                  \n\r \
+  ";
+  serial_print(COM1,logo);
+  
+  log_information("OS Starting");
 
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
-    printf ("Invalid magic number: 0x%x\n", (uint32_t) magic);
+    log_fatal("Invalid magic number: 0x%x\n", (uint32_t) magic);
     return;
   }
 
@@ -27,26 +43,26 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   if(BITREAD(mbi->flags,12)){
     vga_install(mbi->framebuffer_addr,mbi->framebuffer_width,mbi->framebuffer_height,mbi->framebuffer_bpp);
   }
-  printf("Installing GDT .");
+  printf(logo);
   gdt_install();
-  printf("installed");
+  log_information("Installing GDT .installed");
+  
 
-  printf("\n\rInstalling IDT .");
   idt_install();
+  log_information("Installing IDT .installed");
+
   syscalls_install();
-  printf("installed");
-  printf("\n\rInstalling Memory Map .");
+  
   if(BITREAD(mbi->flags,6)){
     pmm_install((multiboot_memory_map_t *)mbi->mmap_addr,mbi->mmap_length);
-    printf("installed");
+    log_information("Installing Memory Map .installed");
   }else{
-    printf("Cannot install memory FAILED");
+    log_fatal("Cannot install memory FAILED");
+    return;
   }
   
-  printf("\n\rInstall Virtual Memory .");
   vmm_install();
-  printf("Installed");
-
+  log_information("Install Virtual Memory .installed");
   // printf("\nTest Virtual Memory .");
   // allocate_page(kernel_directory,0x800000,0,1);
 
@@ -55,13 +71,13 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   // free_page(kernel_directory,0x800000);
   // *mm = 0x0;
 
-  printf("\n\rInstall Kernel Heap ");
   kheap_install();
-  printf("installed");
+  log_information("Install Kernel Heap .installed");
 
-  printf("\n\rInstall Keyboard Driver ");
+
   keyboard_install();
-  printf("installed");
+  log_information("Install Keyboard Driver .installed");
+
 
   register_interrupt_handler(0x20,tick_handler);
 
@@ -80,7 +96,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   
   printf("\n\rOS successfully Installed");
   printf("\n\rcmd > ");
-  register_keyboard_event_handler(keyboard_event);
+  register_keyboard_event_handler(keyboard_event,KEY_UP_EVENT);
   for (;;) { }
   
 
@@ -91,46 +107,7 @@ void tick_handler(register_t * reg){
 
 }
 
-char kbdus[128] = {
-    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
-    '9', '0', '-', '=', '\b',   /* Backspace */
-    '\t',           /* Tab */
-    'q', 'w', 'e', 'r', /* 19 */
-    't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',       /* Enter key */
-    0,          /* 29   - Control */
-    'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';',   /* 39 */
-    '\'', '`',   0,     /* Left shift */
-    '\\', 'z', 'x', 'c', 'v', 'b', 'n',         /* 49 */
-    'm', ',', '.', '/',   0,                    /* Right shift */
-    '*',
-    0,  /* Alt */
-    ' ',    /* Space bar */
-    0,  /* Caps lock */
-    0,  /* 59 - F1 key ... > */
-    0,   0,   0,   0,   0,   0,   0,   0,
-    0,  /* < ... F10 */
-    0,  /* 69 - Num lock*/
-    0,  /* Scroll Lock */
-    0,  /* Home key */
-    0,  /* Up Arrow */
-    0,  /* Page Up */
-    '-',
-    0,  /* Left Arrow */
-    0,
-    0,  /* Right Arrow */
-    '+',
-    0,  /* 79 - End key*/
-    0,  /* Down Arrow */
-    0,  /* Page Down */
-    0,  /* Insert Key */
-    0,  /* Delete Key */
-    0,   0,   0,
-    0,  /* F11 Key */
-    0,  /* F12 Key */
-    0,  /* All other keys are undefined */
-};
-
 void keyboard_event(keyboard_event_t event)
 {
-    printf("\n\rchar : %d , is_Shift: %d , is_ALT : %d, isCtrl: %d",(uint32_t)event.ascii,(uint32_t)event.shift,(uint32_t)event.alt,(uint32_t)event.ctrl);
+    printf("\n\rchar : %c , is_Shift: %d , is_ALT : %d, isCtrl: %d",(uint32_t)event.ascii,(uint32_t)event.shift,(uint32_t)event.alt,(uint32_t)event.ctrl);
 }

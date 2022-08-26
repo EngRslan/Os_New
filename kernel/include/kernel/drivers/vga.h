@@ -12,4 +12,5 @@
 
 void vga_install(uint32_t _buffer_addr,uint16_t _columns, uint16_t _rows,uint8_t _bpp);
 void print_char(char c);
+void print_string(string_t str);
 #endif

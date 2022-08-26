@@ -5,6 +5,7 @@
 #include <kernel/system.h>
 #include <string.h>
 #include <stdio.h>
+#include <logger.h>
 
 // Extern asm functions
 extern void idt_flush(uint32_t ptr);
@@ -128,10 +129,10 @@ void exception_handler(register_t reg) {
         if(reg.int_no == 0xe){
             uint32_t bad_address=0;
             __asm__ __volatile__("movl %%cr2, %0":"=r"(bad_address));
-            printf("EXCEPTION: %s (err code is 0x%x) (Bad address is 0x%x)\n", exception_messages[reg.int_no], reg.err_code, bad_address);
+            log_critical("Page Fault Exception Error Code 0x%x , address 0x%x",reg.err_code, bad_address);
 
         }else{
-            printf("EXCEPTION: %s (err code is 0x%x)\n", exception_messages[reg.int_no], reg.err_code);
+            log_fatal("EXCEPTION: %s (err code is 0x%x)\n",exception_messages[reg.int_no], reg.err_code);
         }
         
         for(;;);

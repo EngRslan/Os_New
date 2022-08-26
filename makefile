@@ -17,7 +17,7 @@ kernel:
 	$(MAKE) --directory=$(KERNEL_DIR) build
 
 run:
-	qemu-system-i386 -boot d -drive file=$(ISO_NAME),media=cdrom,if=ide -s -S
+	qemu-system-i386 -boot d -drive file=$(ISO_NAME),media=cdrom,if=ide -s -S -serial stdio
 bochs: build
 	bochs -q
 .PHONY: kernel clean

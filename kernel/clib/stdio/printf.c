@@ -1,55 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <kernel/drivers/vga.h>
 
-/* The number of columns. */
-#define COLUMNS                 80
-/* The number of lines. */
-#define LINES                   24
-/* The attribute of an character. */
-#define ATTRIBUTE               7
-/* The video memory address. */
-#define VIDEO                  0xb8000
-
-/* Point to the video memory. */
-unsigned char *video = (unsigned char *)VIDEO;
-/* Save the X position. */
-int xpos;
-/* Save the Y position. */
-int ypos;
-
-// static void putchar (int c)
-// {
-//   if (c == '\n' || c == '\r')
-//     {
-//     newline:
-//       xpos = 0;
-//       ypos++;
-//       if (ypos >= LINES)
-//         ypos = 0;
-//       return;
-//     }
-
-//   *(video + (xpos + ypos * COLUMNS) * 2) = c & 0xFF;
-//   *(video + (xpos + ypos * COLUMNS) * 2 + 1) = ATTRIBUTE;
-
-//   xpos++;
-//   if (xpos >= COLUMNS)
-//     goto newline;
-// }
-
-void printf(const char *format, ...)
-{
-    char **arg = (char **)&format;
+void vsprintf(char *str, const char *format, va_list arg){
     int c;
     char buf[20];
-
-    arg++;
-
     while ((c = *format++) != 0)
     {
         if (c != '%')
-            print_char(c);
+        {
+            *str = c;
+            str++;
+        }
         else
         {
             char *p, *p2;
@@ -73,29 +36,54 @@ void printf(const char *format, ...)
             case 'd':
             case 'u':
             case 'x':
-                itoa(buf, c, *((int *)arg++));
+                itoa(buf, c, va_arg(arg,int));
                 p = buf;
                 goto string;
                 break;
 
             case 's':
-                p = *arg++;
+                p = (char *)va_arg(arg,int);
                 if (!p)
                     p = "(null)";
 
             string:
                 for (p2 = p; *p2; p2++)
                     ;
-                for (; p2 < p + pad; p2++)
-                    print_char(pad0 ? '0' : ' ');
+                for (; p2 < p + pad; p2++){
+                    *str = pad0 ? '0' : ' ';
+                    str++;
+                }
                 while (*p)
-                    print_char(*p++);
+                {
+                    *str = *p++;
+                    str++;
+                }
                 break;
 
             default:
-                print_char(*((int *)arg++));
+                    *str =  va_arg(arg,int);
+                    str++;
                 break;
             }
         }
     }
+
+    *str = 0x0;
+}
+void sprintf(char *str,const char *format, ...){
+    va_list args;
+    va_start(args,format);
+    vsprintf(str,format,args);
+}
+void vprintf(const char *format, va_list arg)
+{
+    char buf[512];
+    vsprintf(buf,format,arg);
+    print_string(buf);
+}
+void printf(const char *format, ...)
+{
+    va_list args;
+    va_start(args,format);
+    vprintf(format,args);
 }

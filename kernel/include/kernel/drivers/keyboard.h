@@ -109,5 +109,5 @@ typedef struct keyboard_event
 typedef void (* keyboard_event_handler_t)(keyboard_event_t);
 
 void keyboard_install();
-void register_keyboard_event_handler(keyboard_event_handler_t);
+void register_keyboard_event_handler(keyboard_event_handler_t _handler,uint8_t event_type);
 #endif
