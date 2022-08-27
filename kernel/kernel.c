@@ -112,8 +112,11 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   // register_keyboard_event_handler(keyboard_event,KEY_UP_EVENT);
   // register_keyboard_event_handler(keyboard_event2,KEY_DOWN_EVENT);
   int s=0;
-  scanf("your number please? %d",&s);
-  printf("\nyou write [ %d ] and hex 0x%x",s,s);
+  char ss[50];
+  char kk;
+  float f = 155.0/29.0;
+  scanf("your number please? %d yourname please %s your fav char %c",&s,&ss,&kk);
+  printf("\nyou write [ %d ] and hex [ 0x%x ] and name is %s fav %c float %f",s,s,ss,kk,f);
   for (;;) { }
   
 

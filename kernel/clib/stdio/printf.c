@@ -62,7 +62,8 @@ void vsprintf(char *str, const char *format, va_list arg){
                     str++;
                 }
                 break;
-
+            case 'f':
+                break;
             default:
                     *str =  va_arg(arg,int);
                     str++;

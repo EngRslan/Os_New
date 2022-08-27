@@ -6,7 +6,6 @@
 #include <kernel/drivers/keyboard.h>
 
 char keybuf=0;
-
 void keyboard_keydown_event(keyboard_event_t event)
 {
     if(event.ascii)
@@ -14,7 +13,6 @@ void keyboard_keydown_event(keyboard_event_t event)
         keybuf =  event.ascii;
     }
 }
-
 char readKey(){
     while (!keybuf) { }
     char key = keybuf;
@@ -45,6 +43,26 @@ long read_number(int base){
     buf[pos]=0x0;
     return strtol(buf, &ptr, base);
 };
+void read_string(char * str){
+    char k = 0;
+    int pos = 0;
+
+    while ((k = readKey())!='\n')
+    {
+        if(k == '\b' && pos > 0){
+            pos--;
+            str[pos]=0;
+            putchar(k);
+        }
+
+        putchar(k);
+        str[pos]=k;
+        pos++;
+    }
+
+    str[pos]=0x0;
+
+}
 int vscanf(const char *format, va_list args){
     register_keyboard_event_handler(keyboard_keydown_event,KEY_DOWN_EVENT);
     char c;
@@ -66,9 +84,17 @@ int vscanf(const char *format, va_list args){
                     break;
                 }
                 case 's':
+                {
                     char * s = (char *)va_arg(args,int);
                     read_string(s);
-                break;
+                    break;
+                }
+                case 'c':
+                {
+                    char * c = (char *)va_arg(args,int);
+                    *c = readKey();
+                    putchar(*c);
+                }
                 default:
                     break;
             }
