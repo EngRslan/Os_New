@@ -11,6 +11,7 @@
 #include <kernel/drivers/keyboard.h>
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vesa.h>
+#include <kernel/drivers/pit.h>
 #include <kernel/types.h>
 #include <logger.h>
 #include <stdio.h>
@@ -91,8 +92,10 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   keyboard_install();
   log_information("Install Keyboard Driver .installed");
 
+  pit_install();
+  log_information("Install Programable Interval Timer (PIT) .installed");
 
-  register_interrupt_handler(0x20,tick_handler);
+  //register_interrupt_handler(0x20,tick_handler);
 
   // ptr_t all = kalloc(sizeof(int));
   // ptr_t all2 = kalloc(sizeof(int));
