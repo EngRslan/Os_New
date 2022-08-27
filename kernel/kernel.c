@@ -10,12 +10,14 @@
 #include <kernel/drivers/vga.h>
 #include <kernel/drivers/keyboard.h>
 #include <kernel/drivers/serial.h>
+#include <kernel/drivers/vesa.h>
 #include <kernel/types.h>
 #include <logger.h>
 #include <stdio.h>
 
 void tick_handler(register_t * reg);
 void keyboard_event(keyboard_event_t event);
+void keyboard_event2(keyboard_event_t event);
 void kernel_main (uint64_t magic, multiboot_info_t * mbi);
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -52,7 +54,18 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("Installing IDT .installed");
 
   syscalls_install();
-  
+  // if(BITREAD(mbi->flags,11)){
+  //   struct VbeInfoBlock * info_block = (struct VbeInfoBlock *)mbi->vbe_control_info;
+  //   uint16_t * mode = (uint16_t *)((info_block->VideoModePtr[1]*0x10)+info_block->VideoModePtr[0]);
+  //   string_t Oem = (string_t)((info_block->OemStringPtr[1]*0x10)+info_block->OemStringPtr[0]);
+  //   while (*mode != 0xFFFF)
+  //   {
+  //     log_trace("mode: 0x%x",(uint32_t)*mode);
+  //     mode++;
+  //   }
+  //   struct VbeModeInfoBlock * mdeblock = (struct VbeModeInfoBlock *)((mbi->vbe_interface_seg * 0x10)+mbi->vbe_interface_off);
+  //   log_trace("VESA table available Version:%d, Total Memory:%d",(uint32_t)info_block->VbeVersion,(uint32_t)info_block->TotalMemory);
+  // }
   if(BITREAD(mbi->flags,6)){
     pmm_install((multiboot_memory_map_t *)mbi->mmap_addr,mbi->mmap_length);
     log_information("Installing Memory Map .installed");
@@ -96,7 +109,11 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   
   printf("\n\rOS successfully Installed");
   printf("\n\rcmd > ");
-  register_keyboard_event_handler(keyboard_event,KEY_UP_EVENT);
+  // register_keyboard_event_handler(keyboard_event,KEY_UP_EVENT);
+  // register_keyboard_event_handler(keyboard_event2,KEY_DOWN_EVENT);
+  int s=0;
+  scanf("your number please? %d",&s);
+  printf("\nyou write [ %d ] and hex 0x%x",s,s);
   for (;;) { }
   
 
@@ -109,5 +126,14 @@ void tick_handler(register_t * reg){
 
 void keyboard_event(keyboard_event_t event)
 {
-    printf("\n\rchar : %c , is_Shift: %d , is_ALT : %d, isCtrl: %d",(uint32_t)event.ascii,(uint32_t)event.shift,(uint32_t)event.alt,(uint32_t)event.ctrl);
+    // if(event.ascii)
+    // putchar(event.ascii);
+    log_trace("\n\rreleased char:%c, code : 0x%x , is_Shift: %d , is_ALT : %d, isCtrl: %d",(uint32_t)(event.ascii?event.ascii:' '),(uint32_t)event.key_code,(uint32_t)event.shift,(uint32_t)event.alt,(uint32_t)event.ctrl);
+}
+
+void keyboard_event2(keyboard_event_t event)
+{
+  if(event.ascii)
+    putchar(event.ascii);
+    //printf("\n\rpressed code : 0x%x , is_Shift: %d , is_ALT : %d, isCtrl: %d",(uint32_t)event.key_code,(uint32_t)event.shift,(uint32_t)event.alt,(uint32_t)event.ctrl);
 }

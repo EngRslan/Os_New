@@ -3,6 +3,9 @@
 #include <stdarg.h>
 #include <kernel/drivers/vga.h>
 
+void putchar(char c){
+    print_char(c);
+}
 void vsprintf(char *str, const char *format, va_list arg){
     int c;
     char buf[20];

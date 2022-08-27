@@ -2,14 +2,10 @@
 #include <kernel/isr.h>
 #include <stddef.h>
 #include <ctype.h>
+#include <logger.h>
 #include <kernel/drivers/keyboard.h>
-#define KEY_CODE_CTRL_LEFT      0x1D
-#define KEY_CODE_SHIFT_LEFT     0x2A
-#define KEY_CODE_SHIFT_RIGHT    0x36
-#define KEY_CODE_ALT_LEFT       0x38
-#define KEY_CODE_CAPS_LOCK      0x3A
-#define KEY_CODE_NUM_LOCK       0x45
-#define KEY_CODE_SCROLL_LOCK    0x46
+#define KEY_PRESSED     0x1
+#define KEY_RELEASED    0x2
 
 keyboard_event_handler_t key_down_handler = NULL;
 keyboard_event_handler_t key_up_handler = NULL;
@@ -22,125 +18,258 @@ struct
     uint8_t caps_lock;
     uint8_t scroll_lock;
     uint8_t number_lock;
-} scan_status = {0,0,0,0,0,0};
+    uint8_t winkey;
+    uint8_t e0;
+    uint8_t type;
+} scan_status = {0,0,0,0,0,0,0,0,0};
 
 uint8_t qwerty_scan_table[128] = {
-    0, // note used
-    0x1B, // Escape
-    '1', '2', '3','4','5','6','7','8','9','0','-','=','\b',
-    '\t','q','w','e','r','t','y','u','i','o','p','[',']','\n', // Enter Key
-    0, // Left CTRL
-    'a','s','d','f','g','h','j','k','l',';','\'','`',
-    0, // LEFT SHIFT
-    '\\','z','x','c','v','b','n','m',',','.','/',
-    0, // Right Shift
-    '*', // Keypad Astrisk
-    0, // Left ALt
-    ' ',
-    0, // Caps Lock
-    0/* F1 */,0/* F2 */,0/* F3 */,0/* F4 */,0/* F5 */,0/* F6 */,0/* F7 */,0/* F8 */,0/* F9 */,0/* F10 */, 
-    0/* Num Lock */,0/* scroll Lock */,
-    '7','8','9','-',        //-------
-    '4','5','6','+',        //      | Num PAD
-    '1','2','3'             //      |
-    ,'0','.',               //-------
+    0, 
+    KEY_ESCAPE, KEY_D1, KEY_D2, KEY_D3, KEY_D4, KEY_D5, KEY_D6, KEY_D7, KEY_D8, KEY_D9, KEY_D0,KEY_OEM_MINUS,KEY_OEM_PLUS,KEY_BACK,
+    KEY_TAB, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I, KEY_O, KEY_P, KEY_OEM_OPEN_BRACKETS, KEY_OEM_CLOSE_BRACKETS, KEY_ENTER,
+    KEY_LCTRL, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_K, KEY_L, KEY_OEM_SEMICOLON, KEY_OEM_QUOTES, KEY_OEM_TILDE,
+    KEY_LSHIFT,KEY_OEM_PIPE,KEY_Z,KEY_X,KEY_C,KEY_V,KEY_B,KEY_N,KEY_M,KEY_OEM_COMMA,KEY_OEM_PERIOD,KEY_OEM_BACKSLASH, KEY_RSHIFT,
+    KEY_MULTIPLY,
+    KEY_LMENU/*LALT*/,
+    KEY_SPACE,
+    KEY_CAPSLOCK,
+    KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, 
+    KEY_NUMLOCK,KEY_SCROLL,
+    KEY_NUMPAD7,KEY_NUMPAD8,KEY_NUMPAD9,KEY_SUBSTRACT,
+    KEY_NUMPAD4,KEY_NUMPAD5,KEY_NUMPAD6,KEY_ADD,
+    KEY_NUMPAD1,KEY_NUMPAD2,KEY_NUMPAD3,
+    KEY_NUMPAD0,KEY_DECIMAL,
     0,0,
-    0 /* F11 */,0 /* F12 */,
+    KEY_F11,KEY_F12
+};
+uint8_t qwerty_scan_table_E0[128] = {
+    [0x10]=KEY_MEDIA_PREVIOUS_TRACK,
+    [0x19]=KEY_MEDIA_NEXT_TRACK,
+    [0x1C]=KEY_ENTER,
+    [0x1D]=KEY_RCTRL,
+    [0x20]=KEY_VOLUME_MUTE,
+    [0x21]=KEY_LAUNCH_APP2,
+    [0x22]=KEY_MEDIA_PLAYPAUSE,
+    [0x2E]=KEY_VOLUME_DOWN,
+    [0x30]=KEY_VOLUME_UP,
+    [0x32]=KEY_BROWSER_HOME,
+    [0x35]=KEY_DIVIDE,
+    [0x38]=KEY_ALT,
+    [0x47]=KEY_HOME,
+    [0x48]=KEY_UP,
+    [0x49]=KEY_PAGEUP,
+    [0x4B]=KEY_LEFT,
+    [0x4D]=KEY_RIGHT,
+    [0x4F]=KEY_END,
+    [0x50]=KEY_DOWN,
+    [0x51]=KEY_PAGEDOWN,
+    [0x52]=KEY_INSERT,
+    [0x53]=KEY_DELETE,
+    [0x5B]=KEY_LWIN,
+    [0x5C]=KEY_RWIN,
+    [0x5D]=KEY_APPS,
+    [0x5E]=0,//(ACPI) power pressed,
+    [0x5F]=KEY_SLEEP,
+    [0x63]=0,//(ACPI) wake pressed
+    [0x65]=KEY_BROWSER_SEARCH,
+    [0x66]=KEY_BROWSER_FAVORITES,
+    [0x67]=KEY_BROWSER_REFRESH,
+    [0x68]=KEY_BROWSER_STOP,
+    [0x69]=KEY_BROWSER_FORWARD,
+    [0x6A]=KEY_BROWSER_BACK,
+    [0x6B]=0,//(multimedia) my computer pressed
+    [0x6C]=KEY_LAUNCH_EMAIL,
+    [0x6D]=KEY_SELECT_MEDIA
+} ;
+struct {
+ char normal;
+ char shift;
+ char caps;
+ char numlock;   
+} ASCII_KEY_MAP[] = {
+    [KEY_ESCAPE]                = {0x1b,0   ,0   ,0   },
+    [KEY_OEM_TILDE]             = {'`' ,'~' ,0   ,0   },
+    [KEY_D1]                    = {'1' ,'!' ,0   ,0   },
+    [KEY_D2]                    = {'2' ,'@' ,0   ,0   },
+    [KEY_D3]                    = {'3' ,'#' ,0   ,0   },
+    [KEY_D4]                    = {'4' ,'$' ,0   ,0   },
+    [KEY_D5]                    = {'5' ,'%' ,0   ,0   },
+    [KEY_D6]                    = {'6' ,'^' ,0   ,0   },
+    [KEY_D7]                    = {'7' ,'&' ,0   ,0   },
+    [KEY_D8]                    = {'8' ,'*' ,0   ,0   },
+    [KEY_D9]                    = {'9' ,'(' ,0   ,0   },
+    [KEY_D0]                    = {'0' ,')' ,0   ,0   },
+    [KEY_OEM_MINUS]             = {'-' ,'_' ,0   ,0   },
+    [KEY_OEM_PLUS]              = {'=' ,'+' ,0   ,0   },
+    [KEY_BACK]                  = {'\b',0   ,0   ,0   },
+    [KEY_TAB]                   = {'\t',0   ,0   ,0   },
+    [KEY_Q]                     = {'q' ,'Q' ,'Q' ,0   },
+    [KEY_W]                     = {'w' ,'W' ,'W' ,0   },
+    [KEY_E]                     = {'e' ,'E' ,'E' ,0   },
+    [KEY_R]                     = {'r' ,'R' ,'R' ,0   },
+    [KEY_T]                     = {'t' ,'T' ,'T' ,0   },
+    [KEY_Y]                     = {'y' ,'Y' ,'Y' ,0   },
+    [KEY_U]                     = {'u' ,'U' ,'U' ,0   },
+    [KEY_I]                     = {'i' ,'I' ,'I' ,0   },
+    [KEY_O]                     = {'o' ,'O' ,'O' ,0   },
+    [KEY_P]                     = {'p' ,'P' ,'P' ,0   },
+    [KEY_OEM_OPEN_BRACKETS]     = {'[' ,'{' ,0   ,0   },
+    [KEY_OEM_CLOSE_BRACKETS]    = {']' ,'}' ,0   ,0   },
+    [KEY_OEM_PIPE]              = {'\\','|' ,0   ,0   },
+    [KEY_A]                     = {'a' ,'A' ,'A' ,0   },
+    [KEY_S]                     = {'s' ,'S' ,'S' ,0   }, 
+    [KEY_D]                     = {'d' ,'D' ,'D' ,0   }, 
+    [KEY_F]                     = {'f' ,'F' ,'F' ,0   }, 
+    [KEY_G]                     = {'g' ,'G' ,'G' ,0   }, 
+    [KEY_H]                     = {'h' ,'H' ,'H' ,0   }, 
+    [KEY_J]                     = {'j' ,'J' ,'J' ,0   }, 
+    [KEY_K]                     = {'k' ,'K' ,'K' ,0   }, 
+    [KEY_L]                     = {'l' ,'L' ,'L' ,0   }, 
+    [KEY_OEM_SEMICOLON]         = {';' ,':' ,0   ,0   }, 
+    [KEY_OEM_QUOTES]            = {'\'','"' ,0   ,0   }, 
+    [KEY_ENTER]                 = {'\n',0   ,0   ,0   },
+    [KEY_Z]                     = {'z' ,'Z' ,'Z' ,0   }, 
+    [KEY_X]                     = {'x' ,'X' ,'X' ,0   }, 
+    [KEY_C]                     = {'c' ,'C' ,'C' ,0   }, 
+    [KEY_V]                     = {'v' ,'V' ,'V' ,0   }, 
+    [KEY_B]                     = {'b' ,'B' ,'B' ,0   }, 
+    [KEY_N]                     = {'n' ,'N' ,'N' ,0   }, 
+    [KEY_M]                     = {'m' ,'M' ,'M' ,0   }, 
+    [KEY_OEM_COMMA]             = {',' ,'<' ,0   ,0   }, 
+    [KEY_OEM_PERIOD]            = {'.' ,'>' ,0   ,0   }, 
+    [KEY_OEM_BACKSLASH]         = {'/' ,'?' ,0   ,0   },
+    [KEY_SPACE]                 = {' ' ,0   ,0   ,0   },
+    [KEY_DIVIDE]                = {'/' ,0   ,0   ,0   },
+    [KEY_MULTIPLY]              = {'*' ,0   ,0   ,0   },
+    [KEY_SUBSTRACT]             = {'-' ,0   ,0   ,0   },
+    [KEY_ADD]                   = {'+' ,0   ,0   ,0   },
+    [KEY_NUMPAD7]               = {0   ,0   ,0   ,'7' },
+    [KEY_NUMPAD8]               = {0   ,0   ,0   ,'8' },
+    [KEY_NUMPAD9]               = {0   ,0   ,0   ,'9' },
+    [KEY_NUMPAD4]               = {0   ,0   ,0   ,'4' },
+    [KEY_NUMPAD5]               = {0   ,0   ,0   ,'5' },
+    [KEY_NUMPAD6]               = {0   ,0   ,0   ,'6' },
+    [KEY_NUMPAD1]               = {0   ,0   ,0   ,'1' },
+    [KEY_NUMPAD2]               = {0   ,0   ,0   ,'2' },
+    [KEY_NUMPAD3]               = {0   ,0   ,0   ,'3' },
+    [KEY_NUMPAD0]               = {0   ,0   ,0   ,'0' },
+    [KEY_DECIMAL]               = {0   ,0   ,0   ,'.' },
+
 };
 
-uint8_t is_control_code(int32_t scancode){
-    switch (scancode)
+uint8_t get_key_event(uint8_t scan_code){
+    if(scan_status.e0)
     {
-        case KEY_CODE_CTRL_LEFT:
-        case KEY_CODE_ALT_LEFT:
-        case KEY_CODE_SHIFT_LEFT:
-        case KEY_CODE_SHIFT_RIGHT:
-            return 1;
-        default:
+        return qwerty_scan_table_E0[scan_code];
+    }
+    else
+    {
+        return qwerty_scan_table[scan_code];
+    }
+}
+char get_char(uint8_t key){
+    char ascii_key;
+    if(scan_status.number_lock){
+        ascii_key = ASCII_KEY_MAP[key].numlock;
+        if(ascii_key)
+        return ascii_key;
+    }
 
-            return 0;
-    }   
-}
-void set_function_key(uint32_t scancode,uint8_t value){
-    switch (scancode)
-    {
-        case KEY_CODE_CTRL_LEFT:
-            scan_status.ctrl = value;
-            return;
-        case KEY_CODE_ALT_LEFT:
-            scan_status.alt = value;
-            return;
-        case KEY_CODE_SHIFT_LEFT:
-        case KEY_CODE_SHIFT_RIGHT:
-            scan_status.shift = value;
-            return;
-    }   
-}
-uint8_t is_toggle_key(uint32_t scancode){
-    switch (scancode)
-    {
-        case KEY_CODE_CAPS_LOCK:
-        case KEY_CODE_NUM_LOCK:
-        case KEY_CODE_SCROLL_LOCK:
-            return 1;
-        default:
+    if(scan_status.caps_lock && !scan_status.shift){
+        ascii_key = ASCII_KEY_MAP[key].caps;
+        if(ascii_key)
+        return ascii_key;
+    }
+        
+    if(scan_status.caps_lock && scan_status.shift){
+        ascii_key = ASCII_KEY_MAP[key].caps;
+        if(ascii_key)
+        return ASCII_KEY_MAP[key].normal;
+    }
 
-            return 0;
-    }   
+    if(scan_status.shift){
+        ascii_key = ASCII_KEY_MAP[key].shift;
+        if(ascii_key)
+        return ascii_key;
+    }
+
+    ascii_key = ASCII_KEY_MAP[key].normal;
+    return ascii_key;
 }
-void set_toogle_key(uint32_t scancode,uint8_t value){
-    switch (scancode)
+void handle_code(uint8_t key_code){
+    switch (key_code)
     {
-        case KEY_CODE_CAPS_LOCK:
-            scan_status.caps_lock = value;
-            return;
-        case KEY_CODE_NUM_LOCK:
-            scan_status.number_lock = value;
-            return;
-        case KEY_CODE_SCROLL_LOCK:
-        scan_status.scroll_lock = value;
-            return;
-    }   
-}
-void map_and_fire(uint32_t scancode,keyboard_event_handler_t _event_handler){
-    char ascii_char = qwerty_scan_table[scancode];
-    if((scan_status.shift || scan_status.caps_lock) && isalpha(ascii_char)){
-        ascii_char = toupper(ascii_char);
+    case KEY_LCTRL:
+    case KEY_RCTRL:
+            scan_status.ctrl = scan_status.type == KEY_RELEASED?0:1;
+        break;
+    case KEY_ALT:
+    case KEY_LMENU:
+        scan_status.alt = scan_status.type == KEY_RELEASED?0:1;
+        break;
+    case KEY_LSHIFT:
+    case KEY_RSHIFT:
+        scan_status.shift = scan_status.type == KEY_RELEASED?0:1;
+        break;
+    case KEY_LWIN:
+    case KEY_RWIN:
+        scan_status.winkey = scan_status.type == KEY_RELEASED?0:1;
+        break;
+    case KEY_CAPSLOCK:
+        if(scan_status.type == KEY_RELEASED){
+            scan_status.caps_lock = scan_status.caps_lock>0?0:1;
+        }
+        break;
+    case KEY_NUMLOCK:
+        if(scan_status.type == KEY_RELEASED){
+            scan_status.number_lock = scan_status.number_lock>0?0:1;
+        }
+        break;
+    case KEY_SCROLL:
+        if(scan_status.type == KEY_RELEASED){
+            scan_status.scroll_lock = scan_status.scroll_lock>0?0:1;
+        }
+        break;
+    default:
+        break;
     }
 
     keyboard_event_t keyboard_event;
-    keyboard_event.ascii = ascii_char;
+    keyboard_event.ascii = get_char(key_code);
     keyboard_event.alt = scan_status.alt;
     keyboard_event.ctrl = scan_status.ctrl;
     keyboard_event.alt = scan_status.alt;
     keyboard_event.shift = scan_status.shift;
-    keyboard_event.key_code = ascii_char;
-    if(_event_handler){
-        _event_handler(keyboard_event);
+    keyboard_event.key_code = key_code;
+    if(scan_status.type == KEY_RELEASED && key_up_handler){
+        key_up_handler(keyboard_event);
+    }else if(scan_status.type == KEY_PRESSED && key_down_handler){
+        key_down_handler(keyboard_event);
     }
 }
-void handle_scan_code(int32_t scancode){
-    if(scancode & 0x80) {
-        if(is_control_code(scancode & 0x7F)){
-            set_function_key(scancode & 0x7F,0);
-            return;
-        }
-        if(is_toggle_key(scancode & 0x7F)){
-            set_toogle_key(scancode & 0x7F,scan_status.caps_lock?0:1);
-            return;
-        }
-        
-        map_and_fire(scancode & 0x7F,key_up_handler);
+void handle_scan(uint8_t scan_code){
+    uint8_t key_code;
+    if(scan_code == 0xE0){
+        // Extension
+        scan_status.e0=1;
+        log_trace("Keyboard handle extension waiting next interrupt value");
+        return;
     }
-    else 
+    else if(scan_code & 0x80)
     {
-        if(is_control_code(scancode)){
-            set_function_key(scancode,1);
-            return;
-        }
-        map_and_fire(scancode,key_down_handler);
+        // KEY RELEASED
+        key_code = get_key_event(scan_code & 0x7F);
+        scan_status.type = KEY_RELEASED;
+        scan_status.e0=0;
+    } else {
+        // KEY PRESSED
+        key_code = get_key_event(scan_code);
+        scan_status.type = KEY_PRESSED;
+        scan_status.e0=0;
     }
 
+    log_trace("Keyboard (%s) interrupt scan code: 0x%x mapped to key code: 0x%x, extenstion status:%d",scan_status.type==KEY_RELEASED?"Released":"Preseed",(uint32_t)scan_code,(uint32_t)key_code,(uint32_t)scan_status.e0);
+    handle_code(key_code);
 }
 void keyboard_handler(register_t * r){
     int32_t i, scancode;
@@ -154,13 +283,12 @@ void keyboard_handler(register_t * r){
         break;
     }
     if(i > 0) {
-        handle_scan_code(scancode);
+        handle_scan(scancode);
     }
 }
 void keyboard_install(){
     register_interrupt_handler(IRQ_BASE + 1,keyboard_handler);
 }
-
 void register_keyboard_event_handler(keyboard_event_handler_t _handler,uint8_t event_type){
     if(event_type == KEY_UP_EVENT)
         key_up_handler = _handler;

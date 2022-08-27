@@ -66,6 +66,7 @@ void scroll(){
 void print_char(char c){
     if(c == '\n'){
         y++;
+        x=0;
     }
     else if(c == '\t')
     {
