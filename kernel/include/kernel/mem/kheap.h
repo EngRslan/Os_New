@@ -10,7 +10,7 @@ typedef struct kheap_block_header {
     struct kheap_block_header * prev;
 }__attribute__ ((packed)) kheap_block_header_t ;
 
-ptr_t kalloc(size_t size);
+ptr_t kmalloc(size_t size);
 void kheap_install();
 void kfree(ptr_t ptr);
 #endif

@@ -10,13 +10,15 @@ IDT_DIR=./sys/idt
 IRQ_DIR=./sys/irq
 MEM_DIR=./sys/memory
 DRIVERS_DIR=./drivers
+DATA_STRUCT_DIR=./datastruct
 
 CSRC= kernel.c \
 	$(GDT_DIR)/gdt.c $(IDT_DIR)/syscalls.c $(IDT_DIR)/idt.c $(IRQ_DIR)/irq.c $(DRIVERS_DIR)/pic.c $(SYS_DIR)/port_io.c \
 	$(MEM_DIR)/kheap.c $(MEM_DIR)/vmm.c $(MEM_DIR)/pmm.c \
 	$(DRIVERS_DIR)/vga.c $(DRIVERS_DIR)/keyboard.c  $(DRIVERS_DIR)/serial.c $(DRIVERS_DIR)/pit.c \
 	logging/logger.c \
-  	$(CLIB_DIR)/stdio/scanf.c $(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c $(CLIB_DIR)/ctype/ctype.c
+  	$(CLIB_DIR)/stdio/scanf.c $(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c $(CLIB_DIR)/ctype/ctype.c \
+	$(DATA_STRUCT_DIR)/list.c $(DATA_STRUCT_DIR)/tree.c
 
 SSRC= kernel_entry.asm $(IDT_DIR)/idt_exceptions.asm $(IRQ_DIR)/idt_irq.asm
 OBJS= $(CSRC:.c=.o) $(SSRC:.asm=.o)

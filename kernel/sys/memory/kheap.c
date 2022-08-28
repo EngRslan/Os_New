@@ -60,7 +60,7 @@ void split_block_space(kheap_block_header_t * space, size_t size){
     space->size = size;
     space->free = 0;    
 }
-ptr_t kalloc(size_t size){
+ptr_t kmalloc(size_t size){
     if(size == 0){
         return NULL;
     }

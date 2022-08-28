@@ -13,6 +13,7 @@
 #include <kernel/drivers/vesa.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/types.h>
+#include <kernel/datastruct/list.h>
 #include <logger.h>
 #include <stdio.h>
 
@@ -114,32 +115,29 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   printf("\n\rcmd > ");
   // register_keyboard_event_handler(keyboard_event,KEY_UP_EVENT);
   // register_keyboard_event_handler(keyboard_event2,KEY_DOWN_EVENT);
-  int s=0;
-  char ss[50];
-  char kk;
-  float f = 155.0/29.0;
-  scanf("your number please? %d yourname please %s your fav char %c",&s,&ss,&kk);
-  printf("\nyou write [ %d ] and hex [ 0x%x ] and name is %s fav %c float %f",s,s,ss,kk,f);
+  // int s=0;
+  // char ss[50];
+  // char kk;
+  // float f = 155.0/29.0;
+  // scanf("your number please? %d yourname please %s your fav char %c",&s,&ss,&kk);
+  // printf("\nyou write [ %d ] and hex [ 0x%x ] and name is %s fav %c float %f",s,s,ss,kk,f);
+  int s1 = 10;
+  int s2 = 20;
+  int s3 = 30;
+
+  list_t * list = list_create();
+  list_add_item(list,(ptr_t)&s1);
+  list_add_item(list,(ptr_t)&s2);
+  list_add_item(list,(ptr_t)&s3);
+
+  foreach(item,list){
+    printf("\nitem value %d",*(intptr_t)item->value_ptr);
+  }
+  
+  list_destroy(list);
+  printf("\ndone");
   for (;;) { }
   
 
 }
 
-
-void tick_handler(register_t * reg){
-
-}
-
-void keyboard_event(keyboard_event_t event)
-{
-    // if(event.ascii)
-    // putchar(event.ascii);
-    log_trace("\n\rreleased char:%c, code : 0x%x , is_Shift: %d , is_ALT : %d, isCtrl: %d",(uint32_t)(event.ascii?event.ascii:' '),(uint32_t)event.key_code,(uint32_t)event.shift,(uint32_t)event.alt,(uint32_t)event.ctrl);
-}
-
-void keyboard_event2(keyboard_event_t event)
-{
-  if(event.ascii)
-    putchar(event.ascii);
-    //printf("\n\rpressed code : 0x%x , is_Shift: %d , is_ALT : %d, isCtrl: %d",(uint32_t)event.key_code,(uint32_t)event.shift,(uint32_t)event.alt,(uint32_t)event.ctrl);
-}
