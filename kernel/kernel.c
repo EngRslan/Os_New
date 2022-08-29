@@ -18,10 +18,7 @@
 #include <logger.h>
 #include <stdio.h>
 
-void tick_handler(register_t * reg);
-void keyboard_event(keyboard_event_t event);
-void keyboard_event2(keyboard_event_t event);
-void kernel_main (uint64_t magic, multiboot_info_t * mbi);
+void print_tree(gtree_node_t * node);
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
   
@@ -138,35 +135,72 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   // list_destroy(list);
 
   gtree_t * tree = gtree_create(100);
-  gtree_node_t * node10 = gtree_create_node(tree,NULL,0xa);
-    gtree_node_t * node11 = gtree_create_node(tree,node10,0xb);
-    gtree_node_t * node12 = gtree_create_node(tree,node10,0xc);
-    gtree_node_t * node13 = gtree_create_node(tree,node10,0xd);
-  gtree_node_t * node20 = gtree_create_node(tree,NULL,0x14);
-    gtree_node_t * node21 = gtree_create_node(tree,node20,0x15);
-    gtree_node_t * node22 = gtree_create_node(tree,node20,0x16);
-    gtree_node_t * node23 = gtree_create_node(tree,node20,0x17);
-  gtree_node_t * node30 = gtree_create_node(tree,NULL,0x1E);
-    gtree_node_t * node31 = gtree_create_node(tree,node30,0x1F);
-    gtree_node_t * node32 = gtree_create_node(tree,node30,0x20);
-    gtree_node_t * node33 = gtree_create_node(tree,node30,21);
-  gtree_node_t * node40 = gtree_create_node(tree,NULL,0x28);
-    gtree_node_t * node41 = gtree_create_node(tree,node40,0x29);
-    gtree_node_t * node42 = gtree_create_node(tree,node40,0x2A);
-    gtree_node_t * node43 = gtree_create_node(tree,node40,0x2B);
-  gtree_node_t * node50 = gtree_create_node(tree,NULL,0x32);
-    gtree_node_t * node51 = gtree_create_node(tree,node50,0x33);
-    gtree_node_t * node52 = gtree_create_node(tree,node50,0x34);
-    gtree_node_t * node53 = gtree_create_node(tree,node50,0x35);
-for (uint32_t i = 0; i < 10; i++)
+  // gtree_node_t * node10 = gtree_create_node(tree,NULL,0xa);
+  //   gtree_node_t * node11 = gtree_create_node(tree,node10,0xb);
+  //   gtree_node_t * node12 = gtree_create_node(tree,node10,0xc);
+  //   gtree_node_t * node13 = gtree_create_node(tree,node10,0xd);
+  // gtree_node_t * node20 = gtree_create_node(tree,NULL,0x14);
+  //   gtree_node_t * node21 = gtree_create_node(tree,node20,0x15);
+  //   gtree_node_t * node22 = gtree_create_node(tree,node20,0x16);
+  //   gtree_node_t * node23 = gtree_create_node(tree,node20,0x17);
+  // gtree_node_t * node30 = gtree_create_node(tree,NULL,0x1E);
+  //   gtree_node_t * node31 = gtree_create_node(tree,node30,0x1F);
+  //   gtree_node_t * node32 = gtree_create_node(tree,node30,0x20);
+  //   gtree_node_t * node33 = gtree_create_node(tree,node30,21);
+  // gtree_node_t * node40 = gtree_create_node(tree,NULL,0x28);
+  //   gtree_node_t * node41 = gtree_create_node(tree,node40,0x29);
+  //   gtree_node_t * node42 = gtree_create_node(tree,node40,0x2A);
+  //   gtree_node_t * node43 = gtree_create_node(tree,node40,0x2B);
+  // gtree_node_t * node50 = gtree_create_node(tree,NULL,0x32);
+  //   gtree_node_t * node51 = gtree_create_node(tree,node50,0x33);
+  //   gtree_node_t * node52 = gtree_create_node(tree,node50,0x34);
+  //   gtree_node_t * node53 = gtree_create_node(tree,node50,0x35);
+  gtree_node_t * upnode0 = gtree_create_node(tree,NULL,1000);
+for (uint32_t i = 100; i > 0; i-=10)
 {
-  gtree_node_t * node10 = gtree_create_node(tree,NULL,0xa);
+    gtree_node_t * upnode = gtree_create_node(tree,upnode0,i);
+    for (uint32_t j = 9; j >= 1; j--)
+    {
+        gtree_node_t * upnodess = gtree_create_node(tree,upnode,(i-j));
+        for(uint32_t s = 5; s >= 1; s--){
+          gtree_create_node(tree,upnodess,s);
+        }
+    }
+    
 }
 
+  print_tree(tree->root);
+  gtree_remove_sub(tree ,tree->root->first_child->first_child);
+  gtree_remove_sub(tree ,tree->root->first_child->next_subling);
+  gtree_remove_sub(tree ,tree->root->first_child->next_subling->next_subling->next_subling->next_subling);
 
+  print_tree(tree->root);
   printf("\ndone");
   for (;;) { }
   
+
+}
+int spaces = 0;
+char tabs[50];
+void print_tree(gtree_node_t * node){
+  
+ for (int i = 0; i < spaces; i++)
+  {
+    tabs[i]='\t';
+    tabs[i+1]=0x0;
+  }
+  
+  
+  log_trace("%s-- %d",tabs, node->value);
+  if(node->first_child){
+    spaces++;
+    print_tree(node->first_child);
+    spaces--;
+  }
+  // log_trace("\t-- %d",node->value);
+  if(node->next_subling){
+    print_tree(node->next_subling);
+  }
 
 }
 

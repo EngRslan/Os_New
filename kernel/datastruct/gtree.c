@@ -25,19 +25,59 @@ gtree_node_t * gtree_create_node(gtree_t * gtree,gtree_node_t * parent_node,int3
     return gtree_node;
 }
 
-void gtree_remove_node(gtree_t * gtree,gtree_node_t * parent_node,gtree_node_t * gtree_node){
-    if(!gtree_node->first_child){
-        if(parent_node == NULL){
-            gtree->root = NULL;
-        }else{
-            parent_node->first_child = gtree_node->next_subling;
-        }
+// void gtree_remove_node_internal(gtree_t * gtree,gtree_node_t * gtree_node){
+//     if(gtree_node->first_child){
+//         gtree_remove_node_internal(gtree,gtree_node->first_child);  
+//         kfree(gtree_node->first_child);
+//         gtree_node->first_child = NULL; 
+
+//     }
+
+//     if(gtree_node->next_subling){
+//         gtree_remove_node_internal(gtree,gtree_node->next_subling);   
+//         kfree(gtree_node->next_subling);
+//         gtree_node->next_subling = NULL;
+//     }
+// }
+
+void remove_node(gtree_node_t * gtree_node){
         kfree(gtree_node);
-        return;
+        gtree_node = NULL;
+}
+void gtree_hierachy_execute(gtree_node_t * gtree_node, void(*func)(gtree_node_t *)){
+    if(gtree_node->first_child){
+        gtree_hierachy_execute(gtree_node->first_child,func);
+        func(gtree_node->first_child);
     }
 
-    gtree_remove_node(gtree,gtree_node,gtree_node->first_child);
+    if(gtree_node->next_subling){
+        gtree_hierachy_execute(gtree_node->next_subling,func);
+        func(gtree_node->next_subling);
+    }
+}
+
+
+void gtree_remove_node_internal(gtree_t * gtree,gtree_node_t * gtree_node){
+    
 }
 
 
 
+void gtree_remove_sub(gtree_t * gtree,gtree_node_t * gtree_node){
+    if(!gtree_node->first_child)
+    {
+        return;
+    }
+    gtree_hierachy_execute(gtree_node->first_child,remove_node);
+    gtree_node->first_child = NULL;
+}
+
+
+
+// gtree_node_t * gtree_find(gtree_node_t * base_node, int(*match)(gtree_node_t *)){
+//     if(!base_node->first_child){
+//         return NULL;
+//     }
+
+
+// }

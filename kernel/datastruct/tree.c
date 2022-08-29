@@ -5,7 +5,7 @@
 
 
 tree_t * tree_create(){
-    tree_t * tree_ptr = (tree_node_t *)kmalloc(sizeof(tree_t));
+    tree_t * tree_ptr = (tree_t *)kmalloc(sizeof(tree_t));
     return tree_ptr;
 }
 
