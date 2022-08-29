@@ -3,10 +3,11 @@
 #include <kernel/types.h>
 #include "list.h"
 
-typedef struct
+typedef struct tree_node
 {
     ptr_t value ;
     list_t * children;
+    struct tree_node * parent;
 
 }tree_node_t ;
 

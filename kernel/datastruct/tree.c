@@ -9,21 +9,15 @@ tree_t * tree_create(){
     return tree_ptr;
 }
 
-tree_node_t * tree_create_node(ptr_t value_ptr){
+tree_node_t * tree_create_node(tree_t * tree_ptr,tree_node_t * node_ptr,ptr_t value_ptr){
     tree_node_t * tree_node = (tree_node_t *)kmalloc(sizeof(tree_node_t));
     tree_node->value = value_ptr;
     tree_node->children = list_create();
-}
-
-tree_node_t * tree_insert_node(tree_t * tree_ptr,tree_node_t * node_ptr,ptr_t value_ptr){
-    tree_node_t * node = tree_create_node(value_ptr);
-    if(!tree_ptr->root){
-        tree_ptr->root = node;
-        return node;
+    tree_node->parent = node_ptr;
+    if(node_ptr == NULL){
+        tree_ptr->root = tree_node;
+        return tree_node;
     }
-    
-    list_add_item(node_ptr->children,node);
-    return node;
-
+    list_add_item(node_ptr->children,tree_node);
+    return tree_node;
 }
-

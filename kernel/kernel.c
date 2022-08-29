@@ -14,6 +14,7 @@
 #include <kernel/drivers/pit.h>
 #include <kernel/types.h>
 #include <kernel/datastruct/list.h>
+#include <kernel/datastruct/gtree.h>
 #include <logger.h>
 #include <stdio.h>
 
@@ -121,20 +122,29 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   // float f = 155.0/29.0;
   // scanf("your number please? %d yourname please %s your fav char %c",&s,&ss,&kk);
   // printf("\nyou write [ %d ] and hex [ 0x%x ] and name is %s fav %c float %f",s,s,ss,kk,f);
-  int s1 = 10;
-  int s2 = 20;
-  int s3 = 30;
+  // int s1 = 10;
+  // int s2 = 20;
+  // int s3 = 30;
 
-  list_t * list = list_create();
-  list_add_item(list,(ptr_t)&s1);
-  list_add_item(list,(ptr_t)&s2);
-  list_add_item(list,(ptr_t)&s3);
+  // list_t * list = list_create();
+  // list_add_item(list,(ptr_t)&s1);
+  // list_add_item(list,(ptr_t)&s2);
+  // list_add_item(list,(ptr_t)&s3);
 
-  foreach(item,list){
-    printf("\nitem value %d",*(intptr_t)item->value_ptr);
-  }
+  // foreach(item,list){
+  //   printf("\nitem value %d",*(intptr_t)item->value_ptr);
+  // }
   
-  list_destroy(list);
+  // list_destroy(list);
+
+  gtree_t * tree = gtree_create(100);
+  gtree_node_t * node10 = gtree_create_node(tree,NULL,10);
+  gtree_node_t * node20 = gtree_create_node(tree,NULL,20);
+  gtree_node_t * node30 = gtree_create_node(tree,NULL,30);
+  gtree_node_t * node40 = gtree_create_node(tree,NULL,40);
+  gtree_node_t * node50 = gtree_create_node(tree,NULL,50);
+
+
   printf("\ndone");
   for (;;) { }
   
