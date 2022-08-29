@@ -10,7 +10,7 @@ gtree_t * gtree_create(int32_t root_value){
 }
 
 gtree_node_t * gtree_create_node(gtree_t * gtree,gtree_node_t * parent_node,int32_t value){
-    gtree_node_t * gtree_node = (gtree_node_t *) kmalloc(sizeof(parent_node));
+    gtree_node_t * gtree_node = (gtree_node_t *) kmalloc(sizeof(gtree_node_t));
     gtree_node->first_child = NULL;
     gtree_node->next_subling = NULL;
     gtree_node->value = value;
