@@ -19,6 +19,9 @@
 #include <stdio.h>
 
 void print_tree(gtree_node_t * node);
+int find_by_value(gtree_node_t * s);
+void print_hierarchy(gtree_node_t * s,int depth);
+
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
   
@@ -134,7 +137,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   
   // list_destroy(list);
 
-  gtree_t * tree = gtree_create(100);
+  gtree_t * tree = gtree_create(1000);
   // gtree_node_t * node10 = gtree_create_node(tree,NULL,0xa);
   //   gtree_node_t * node11 = gtree_create_node(tree,node10,0xb);
   //   gtree_node_t * node12 = gtree_create_node(tree,node10,0xc);
@@ -155,52 +158,49 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   //   gtree_node_t * node51 = gtree_create_node(tree,node50,0x33);
   //   gtree_node_t * node52 = gtree_create_node(tree,node50,0x34);
   //   gtree_node_t * node53 = gtree_create_node(tree,node50,0x35);
-  gtree_node_t * upnode0 = gtree_create_node(tree,NULL,1000);
 for (uint32_t i = 100; i > 0; i-=10)
 {
-    gtree_node_t * upnode = gtree_create_node(tree,upnode0,i);
+    gtree_node_t * upnode = gtree_create_child(tree->root,i);
     for (uint32_t j = 9; j >= 1; j--)
     {
-        gtree_node_t * upnodess = gtree_create_node(tree,upnode,(i-j));
+        gtree_node_t * upnodess = gtree_create_child(upnode,(i-j));
         for(uint32_t s = 5; s >= 1; s--){
-          gtree_create_node(tree,upnodess,s);
+          gtree_create_child(upnodess,s);
         }
     }
     
 }
 
-  print_tree(tree->root);
-  gtree_remove_sub(tree ,tree->root->first_child->first_child);
-  gtree_remove_sub(tree ,tree->root->first_child->next_subling);
-  gtree_remove_sub(tree ,tree->root->first_child->next_subling->next_subling->next_subling->next_subling);
-
-  print_tree(tree->root);
-  printf("\ndone");
+//  gtree_node_t * upnode02 = gtree_descendant_query(tree->root,find_by_value);
+//   //  print_tree(tree->root);
+   gtree_remove_descendant(tree ,tree->root->first_child);
+  //  gtree_remove_descendant(tree ,tree->root->next_subling);
+  //  gtree_remove_descendant(tree ,tree->root->next_subling->next_subling->next_subling->next_subling);
+//  if(upnode02)
+//     gtree_descendant_exec(upnode02,print_hierarchy,0);
+    gtree_descendant_exec(tree->root,print_hierarchy,0);
   for (;;) { }
   
 
 }
 int spaces = 0;
 char tabs[50];
-void print_tree(gtree_node_t * node){
-  
- for (int i = 0; i < spaces; i++)
+void print_hierarchy(gtree_node_t * node,int depth){
+  if(depth == 0){
+    tabs[0] = 0;
+  }
+  for (int i = 0; i < depth; i++)
   {
     tabs[i]='\t';
     tabs[i+1]=0x0;
   }
-  
-  
-  log_trace("%s-- %d",tabs, node->value);
-  if(node->first_child){
-    spaces++;
-    print_tree(node->first_child);
-    spaces--;
-  }
-  // log_trace("\t-- %d",node->value);
-  if(node->next_subling){
-    print_tree(node->next_subling);
-  }
-
+  log_trace("%s--| %d",tabs, node->value);
 }
 
+int find_by_value(gtree_node_t * s){
+  if(s->value == 10){
+    return 1;
+  }
+  
+  return 0;
+}
