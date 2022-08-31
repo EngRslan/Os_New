@@ -12,9 +12,11 @@
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vesa.h>
 #include <kernel/drivers/pit.h>
+#include <kernel/drivers/pci.h>
 #include <kernel/types.h>
 #include <kernel/datastruct/list.h>
 #include <kernel/datastruct/gtree.h>
+#include <kernel/filesystems/vfs.h>
 #include <logger.h>
 #include <stdio.h>
 
@@ -79,13 +81,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   
   vmm_install();
   log_information("Install Virtual Memory .installed");
-  // printf("\nTest Virtual Memory .");
-  // allocate_page(kernel_directory,0x800000,0,1);
-
-  // uint32_t * mm = (uint32_t *)0x800000;
-  // *mm = 0xFFFFFFFF;
-  // free_page(kernel_directory,0x800000);
-  // *mm = 0x0;
+  
 
   kheap_install();
   log_information("Install Kernel Heap .installed");
@@ -96,6 +92,28 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
 
   pit_install();
   log_information("Install Programable Interval Timer (PIT) .installed");
+  
+  vfs_install();
+  log_information("Install Virtual File System (VFS) .installed");
+
+
+  uint32_t vendor_id = read_pci(0,0,0,0);
+  uint32_t device_id = read_pci(0,0,0,2);
+  uint32_t command = read_pci(0,0,0,4);
+  uint32_t status = read_pci(0,0,0,6);
+
+  for (;;) { }
+  
+
+}
+
+  // printf("\nTest Virtual Memory .");
+  // allocate_page(kernel_directory,0x800000,0,1);
+
+  // uint32_t * mm = (uint32_t *)0x800000;
+  // *mm = 0xFFFFFFFF;
+  // free_page(kernel_directory,0x800000);
+  // *mm = 0x0;
 
   //register_interrupt_handler(0x20,tick_handler);
 
@@ -109,11 +127,11 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   // ptr_t all5 = kalloc(sizeof(int));
   // ptr_t all6 = kalloc(0x1200);
 
-  int32_t a;
-  __asm__ __volatile__("int $0x80":"=a"(a):"a"(0),"b"(0x120),"d"(0x160));
+  // int32_t a;
+  // __asm__ __volatile__("int $0x80":"=a"(a):"a"(0),"b"(0x120),"d"(0x160));
   
-  printf("\n\rOS successfully Installed");
-  printf("\n\rcmd > ");
+  // printf("\n\rOS successfully Installed");
+  // printf("\n\rcmd > ");
   // register_keyboard_event_handler(keyboard_event,KEY_UP_EVENT);
   // register_keyboard_event_handler(keyboard_event2,KEY_DOWN_EVENT);
   // int s=0;
@@ -137,7 +155,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   
   // list_destroy(list);
 
-  gtree_t * tree = gtree_create(1000);
+  // gtree_t * tree = gtree_create(1000);
   // gtree_node_t * node10 = gtree_create_node(tree,NULL,0xa);
   //   gtree_node_t * node11 = gtree_create_node(tree,node10,0xb);
   //   gtree_node_t * node12 = gtree_create_node(tree,node10,0xc);
@@ -158,49 +176,46 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   //   gtree_node_t * node51 = gtree_create_node(tree,node50,0x33);
   //   gtree_node_t * node52 = gtree_create_node(tree,node50,0x34);
   //   gtree_node_t * node53 = gtree_create_node(tree,node50,0x35);
-for (uint32_t i = 100; i > 0; i-=10)
-{
-    gtree_node_t * upnode = gtree_create_child(tree->root,i);
-    for (uint32_t j = 9; j >= 1; j--)
-    {
-        gtree_node_t * upnodess = gtree_create_child(upnode,(i-j));
-        for(uint32_t s = 5; s >= 1; s--){
-          gtree_create_child(upnodess,s);
-        }
-    }
+// for (uint32_t i = 100; i > 0; i-=10)
+// {
+//     gtree_node_t * upnode = gtree_create_child(tree->root,i);
+//     for (uint32_t j = 9; j >= 1; j--)
+//     {
+//         gtree_node_t * upnodess = gtree_create_child(upnode,(i-j));
+//         for(uint32_t s = 5; s >= 1; s--){
+//           gtree_create_child(upnodess,s);
+//         }
+//     }
     
-}
+// }
 
 //  gtree_node_t * upnode02 = gtree_descendant_query(tree->root,find_by_value);
 //   //  print_tree(tree->root);
-   gtree_remove_descendant(tree ,tree->root->first_child);
+  //  gtree_remove_descendant(tree ,tree->root->first_child);
   //  gtree_remove_descendant(tree ,tree->root->next_subling);
   //  gtree_remove_descendant(tree ,tree->root->next_subling->next_subling->next_subling->next_subling);
 //  if(upnode02)
 //     gtree_descendant_exec(upnode02,print_hierarchy,0);
-    gtree_descendant_exec(tree->root,print_hierarchy,0);
-  for (;;) { }
-  
+    // gtree_descendant_exec(tree->root,print_hierarchy,0);
 
-}
-int spaces = 0;
-char tabs[50];
-void print_hierarchy(gtree_node_t * node,int depth){
-  if(depth == 0){
-    tabs[0] = 0;
-  }
-  for (int i = 0; i < depth; i++)
-  {
-    tabs[i]='\t';
-    tabs[i+1]=0x0;
-  }
-  log_trace("%s--| %d",tabs, node->value);
-}
+// int spaces = 0;
+// char tabs[50];
+// void print_hierarchy(gtree_node_t * node,int depth){
+//   if(depth == 0){
+//     tabs[0] = 0;
+//   }
+//   for (int i = 0; i < depth; i++)
+//   {
+//     tabs[i]='\t';
+//     tabs[i+1]=0x0;
+//   }
+//   log_trace("%s--| %d",tabs, node->value);
+// }
 
-int find_by_value(gtree_node_t * s){
-  if(s->value == 10){
-    return 1;
-  }
+// int find_by_value(gtree_node_t * s){
+//   if(s->value == 10){
+//     return 1;
+//   }
   
-  return 0;
-}
+//   return 0;
+// }
