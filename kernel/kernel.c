@@ -96,11 +96,39 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   vfs_install();
   log_information("Install Virtual File System (VFS) .installed");
 
+  pci_header_type_t pci_ht = pci_read_header_type(0,0,0);
+  size_t ss = sizeof(struct pci_config_space_1);
 
-  uint32_t vendor_id = read_pci(0,0,0,0);
-  uint32_t device_id = read_pci(0,0,0,2);
-  uint32_t command = read_pci(0,0,0,4);
-  uint32_t status = read_pci(0,0,0,6);
+  // pci_command_t cmd = {.enable=1, .bus = 0,.device=0,.function=0,.offset=0};
+  // size_t s = sizeof(pci_command_t);
+  // uint32_t va = cmd.bits;
+  // uint32_t val = pci_read(cmd);
+  // list_t * pci_list = list_create();
+  // struct pci_heder * h = (struct pci_heder *)kmalloc(sizeof(struct pci_heder));
+  // for(uint16_t i = 0;i<256;i++){
+  //   for(uint16_t j = 0;j<32;j++){
+  //     read_pci((intptr_t *)h,i,j,0);
+  //     if(h->vendor_id != 0xFFFF){
+  //       list_add_item(pci_list,(ptr_t *)h);
+  //       if(h->header_type & 0x80){
+  //         h = (struct pci_heder *)kmalloc(sizeof(struct pci_heder));
+  //         for (uint32_t s = 1; s < 8; s++)
+  //         {
+  //           read_pci((intptr_t *)h,i,j,s);
+  //           if(h->vendor_id != 0xFFFF){
+  //             list_add_item(pci_list,(ptr_t *)h);
+  //             h = (struct pci_heder *)kmalloc(sizeof(struct pci_heder));
+  //           }
+  //         }
+          
+  //       }
+  //       h = (struct pci_heder *)kmalloc(sizeof(struct pci_heder));
+  //     }
+  //   }
+  // }
+  // uint32_t device_id = read_pci(0,0,0,2);
+  // uint32_t command = read_pci(0,0,0,4);
+  // uint32_t status = read_pci(0,0,0,6);
 
   for (;;) { }
   
