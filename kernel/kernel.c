@@ -17,12 +17,32 @@
 #include <kernel/datastruct/list.h>
 #include <kernel/datastruct/gtree.h>
 #include <kernel/filesystems/vfs.h>
+#include <kernel/system.h>
 #include <logger.h>
 #include <stdio.h>
 
 void print_tree(gtree_node_t * node);
 int find_by_value(gtree_node_t * s);
 void print_hierarchy(gtree_node_t * s,int depth);
+
+uint32_t pciConfigReadWord(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
+    uint32_t address;
+    uint32_t lbus  = (uint32_t)bus;
+    uint32_t lslot = (uint32_t)slot;
+    uint32_t lfunc = (uint32_t)func;
+    uint32_t tmp = 0;
+ 
+    // Create configuration address as per Figure 1
+    address = (uint32_t)((lbus << 16) | (lslot << 11) |
+              (lfunc << 8) | (offset & 0xFC) | ((uint32_t)0x80000000));
+ 
+    // Write out the address
+    outportl(0xCF8, address);
+    // Read in the data
+    // (offset & 2) * 8) = 0 will choose the first word of the 32-bit register
+    tmp = inportl(0xCFC);
+    return tmp;
+}
 
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -96,8 +116,30 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   vfs_install();
   log_information("Install Virtual File System (VFS) .installed");
 
-  pci_header_type_t pci_ht = pci_read_header_type(0,0,0);
-  size_t ss = sizeof(struct pci_config_space_1);
+  list_t * list = list_create();
+  pci_scan_list(list);
+  foreach(item,list){
+    pci_config_t * config = (pci_config_t *)item->value_ptr;
+    switch (config->header.type)
+    {
+      case PCI_HEADER_DEVICE:
+        pci_config_space_0_t * cfg0 = (pci_config_space_0_t *)config->config;
+        break;
+      case PCI_HEADER_PCI_PCI_BRIDGE:
+        pci_config_space_1_t * cfg1 = (pci_config_space_1_t *)config->config;
+        break;
+      case PCI_HEADER_PCI_CARDBUS_BRIDGE:
+        pci_config_space_2_t * cfg2 = (pci_config_space_2_t *)config->config;
+        break;
+    }
+  }
+  
+  // pci_header_type_t h = pci_read_header_type(1,22,6);
+
+  // pci_header_type_t pci_ht = pci_read_header_type(0,0,0);
+  // size_t ss0 = sizeof(struct pci_config_space_0);
+  // size_t ss1 = sizeof(struct pci_config_space_1);
+  // size_t ss2 = sizeof(struct pci_config_space_2);
 
   // pci_command_t cmd = {.enable=1, .bus = 0,.device=0,.function=0,.offset=0};
   // size_t s = sizeof(pci_command_t);
