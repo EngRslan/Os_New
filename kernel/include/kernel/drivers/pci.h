@@ -1,6 +1,7 @@
 #ifndef PCI_H
 #define PCI_H
 #include <kernel/types.h>
+#include <kernel/datastruct/list.h>
 // Offset
 #define PCI_VENDOR_ID            0x00
 #define PCI_DEVICE_ID            0x02
@@ -27,6 +28,12 @@
 #define PCI_MAX_DEVICES_PER_BUS         0x20
 #define PCI_MAX_FUNCTIONS_PER_DEVICE    0x8
 
+#define PCI_CONFIG_ACCESS_SIZE 0x100
+
+#define PCI_HEADER_DEVICE                   0x0
+#define PCI_HEADER_PCI_PCI_BRIDGE           0x1
+#define PCI_HEADER_PCI_CARDBUS_BRIDGE       0x2
+
 typedef union pci_command
 {
     uint32_t bits;
@@ -38,11 +45,11 @@ typedef union pci_command
         uint32_t device         :5;
         uint32_t bus            :8;   
         uint32_t res            :7;
-        uint32_t enable         :1
-    };
+        uint32_t enable         :1;
+    } ;
     
     
-}__attribute__((packed)) pci_command_t;
+} __attribute__((packed)) pci_command_t ; 
 
 typedef union pci_header_type
 {
@@ -50,17 +57,23 @@ typedef union pci_header_type
     struct
     {
         uint8_t type :7;
-        uint8_t is_multifunction :1
-    };
+        uint8_t is_multifunction :1;
+    } ;
     
-}__attribute__((packed)) pci_header_type_t;
+} __attribute__((packed)) pci_header_type_t;
 
-struct pci_config_space_0
-{
+typedef struct pci_config_common{
     uint16_t vendor_id, device_id;
     uint16_t command, status;
     uint8_t revision_id, prog_if, sub_class, class_code;
-    uint8_t cach_line_size, latency_timer, header_type, bist;
+    uint8_t cach_line_size, latency_timer;
+    pci_header_type_t header_type;
+    uint8_t bist;
+} __attribute__((packed)) pci_config_common_t;
+
+typedef struct pci_config_space_0
+{
+    struct pci_config_common common;
     uint32_t BAR0;
     uint32_t BAR1;
     uint32_t BAR2;
@@ -75,16 +88,12 @@ struct pci_config_space_0
     uint8_t __;
     uint32_t ___;
     uint8_t interrupt_line, interrupt_pin, min_grant, max_latency;
-}__attribute__((packed));
+} __attribute__((packed)) pci_config_space_0_t;
 
-struct pci_config_space_1
+typedef struct pci_config_space_1
 {
-    uint16_t vendor_id, device_id;
-    uint16_t command, status;
-    uint8_t revision_id, prog_if, sub_class, class_code;
-    uint8_t cach_line_size, latency_timer, header_type, bist;
-    uint32_t BAR0;
-    uint32_t BAR1;
+    struct pci_config_common common;
+    uint32_t BAR0,BAR1;
     uint8_t primary_bus_number, secondary_bus_number, subordinate_bus_number, secondary_latency_timer;
     uint8_t io_base, io_limit;
     uint16_t secondary_status;
@@ -99,9 +108,41 @@ struct pci_config_space_1
     uint32_t expansion_rom_base_address;
     uint8_t interrupt_line, interrupt_pin;
     uint16_t bridge_control;
-}__attribute__((packed));
+}__attribute__((packed)) pci_config_space_1_t;
 
-uint32_t pci_read(pci_command_t command);
-pci_header_type_t pci_read_header_type(uint32_t bus,uint32_t device,uint32_t function);
+typedef struct pci_config_space_2
+{
+    struct pci_config_common common;
+    uint32_t card_bus_socket_exca_base_address;
+    uint8_t offset_of_capabilities_list , _;
+    uint16_t secundary_status;
+    uint8_t pci_bus_number, cardbus_number, subordinate_bus_number, cardbus_latency;
+    uint32_t memory_base_address_0;
+    uint32_t memory_limit_0;
+    uint32_t memory_base_address_1;
+    uint32_t memory_limit_1;
+    uint32_t io_base_address_0;
+    uint32_t io_limit_0;
+    uint32_t io_base_address_1;
+    uint32_t io_limit_1;
+    uint8_t interrupt_line, interrupt_pin;
+    uint16_t bridge_control;
+    uint16_t subsystem_vendor_id, subsystem_id;
+    uint32_t bit16_pc_card_legacy_mode_base_address;
+} __attribute__((packed)) pci_config_space_2_t;
+
+typedef struct pci_config
+{
+    uint32_t bus;
+    uint32_t device;
+    uint32_t function;
+    pci_header_type_t header;
+    pci_config_common_t * config;
+} pci_config_t;
+
+// uint32_t pci_read(pci_command_t command);
+// pci_header_type_t pci_read_header_type(pci_command_t command);
+// int32_t pci_read_config_block(const intptr_t buffer,pci_command_t cmd);
+void pci_scan_list(list_t *list);
 
 #endif
