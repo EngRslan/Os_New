@@ -122,9 +122,10 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("PCI Installed Successfully");
 
   log_information("Installing IDE Controller");
-  ide_install();
+  pci_device_config_t * cfg = pci_get_device_config(0x1,0x1);
+  ide_install(cfg->BAR0,cfg->BAR1,cfg->BAR2,cfg->BAR3,cfg->BAR4);
   
-  uint32_t ss = pciConfigReadWord(0,1,1,PCI_BAR4);
+  // uint32_t ss = pciConfigReadWord(0,1,1,PCI_BAR4);
   // list_t * list = list_create();
   // pci_scan_list(list);
   // foreach(item,list){

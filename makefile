@@ -17,7 +17,7 @@ kernel:
 	$(MAKE) --directory=$(KERNEL_DIR) build
 
 run:
-	qemu-system-i386 -boot d -drive file=$(ISO_NAME),media=cdrom,if=ide -s -S -serial stdio
+	qemu-system-i386 -boot d -drive file=$(ISO_NAME),media=cdrom,if=ide -s -S -serial stdio  -vga std -monitor telnet:127.0.0.1:55555,server,nowait;
 bochs: build
 	bochs -q
 .PHONY: kernel clean
