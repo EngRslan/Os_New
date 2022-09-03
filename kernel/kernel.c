@@ -13,6 +13,7 @@
 #include <kernel/drivers/vesa.h>
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/pci.h>
+#include <kernel/drivers/ide.h>
 #include <kernel/types.h>
 #include <kernel/datastruct/list.h>
 #include <kernel/datastruct/gtree.h>
@@ -21,9 +22,9 @@
 #include <logger.h>
 #include <stdio.h>
 
-void print_tree(gtree_node_t * node);
-int find_by_value(gtree_node_t * s);
-void print_hierarchy(gtree_node_t * s,int depth);
+// void print_tree(gtree_node_t * node);
+// int find_by_value(gtree_node_t * s);
+// void print_hierarchy(gtree_node_t * s,int depth);
 
 uint32_t pciConfigReadWord(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
     uint32_t address;
@@ -116,23 +117,49 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   vfs_install();
   log_information("Install Virtual File System (VFS) .installed");
 
-  list_t * list = list_create();
-  pci_scan_list(list);
-  foreach(item,list){
-    pci_config_t * config = (pci_config_t *)item->value_ptr;
-    switch (config->header.type)
-    {
-      case PCI_HEADER_DEVICE:
-        pci_config_space_0_t * cfg0 = (pci_config_space_0_t *)config->config;
-        break;
-      case PCI_HEADER_PCI_PCI_BRIDGE:
-        pci_config_space_1_t * cfg1 = (pci_config_space_1_t *)config->config;
-        break;
-      case PCI_HEADER_PCI_CARDBUS_BRIDGE:
-        pci_config_space_2_t * cfg2 = (pci_config_space_2_t *)config->config;
-        break;
-    }
-  }
+  log_information("Install PCI.");
+  pci_install();
+  log_information("PCI Installed Successfully");
+
+  log_information("Installing IDE Controller");
+  ide_install();
+  
+  uint32_t ss = pciConfigReadWord(0,1,1,PCI_BAR4);
+  // list_t * list = list_create();
+  // pci_scan_list(list);
+  // foreach(item,list){
+  //   pci_config_t * config = (pci_config_t *)item->value_ptr;
+    
+    
+  //   switch (config->header.type)
+  //   {
+  //     case PCI_HEADER_DEVICE:
+  //     {
+
+  //       pci_config_space_0_t * cfg0 = (pci_config_space_0_t *)config->config;
+  //       log_trace("Device Found (bus:%d, slot:%d, function: %d) . Vendor:0x%x, id:0x%x, class:0x%x, subclass:0x%x",
+  //         config->bus,config->device,config->function,config->config->vendor_id,config->config->device_id,config->config->class_code,config->config->sub_class);
+  //       break;
+  //     }
+  //     case PCI_HEADER_BRIDGE:
+  //     {
+
+  //       pci_config_space_1_t * cfg1 = (pci_config_space_1_t *)config->config;
+  //       log_trace("Bridge Found (bus:%d, slot:%d, function: %d) . Vendor:0x%x, id:0x%x, class:0x%x, subclass:0x%x",
+  //         config->bus,config->device,config->function,config->config->vendor_id,config->config->device_id,config->config->class_code,config->config->sub_class);
+  //       break;
+  //     }
+  //     case PCI_HEADER_CARDBUS:
+  //     {
+
+  //       pci_config_space_2_t * cfg2 = (pci_config_space_2_t *)config->config;
+  //       log_trace("Cardbus Found (bus:%d, slot:%d, function: %d) . Vendor:0x%x, id:0x%x, class:0x%x, subclass:0x%x",
+  //           config->bus,config->device,config->function,config->config->vendor_id,config->config->device_id,config->config->class_code,config->config->sub_class);
+  //     }
+  //       break;
+  //   }
+
+  // }
   
   // pci_header_type_t h = pci_read_header_type(1,22,6);
 

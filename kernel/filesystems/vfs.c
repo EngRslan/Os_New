@@ -16,3 +16,4 @@ void vfs_install(){
     root->file = NULL;
     vfs_tree = gtree_create((uint32_t)root);
 }
+

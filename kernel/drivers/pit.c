@@ -49,7 +49,7 @@ void pit_install(){
 void interrupt_handler(register_t * reg){
     millis+=1;
     //log_trace("seconds = %d",millis);
-    if((millis % 1000)==0){
-        log_trace("seconds = %d",millis/1000);
-    }
+    // if((millis % 1000)==0){
+    //     log_trace("seconds = %d",millis/1000);
+    // }
 }

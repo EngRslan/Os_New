@@ -9,6 +9,20 @@ page_directory_t * kernel_directory;
 page_table_t * kernel_tables_map;
 int is_pagging_done = 0;
 
+uint32_t virtual2physical(v_addr_t addr){
+    uint16_t dir_index = DIR_INDEX(addr);
+    uint16_t page_index = PAGE_INDEX(addr);
+
+    page_table_directory_t * dir_entry = &kernel_directory->tables[dir_index];
+    if(!dir_entry->present)
+        return 0;
+    page_table_t * table = (page_table_t *) GET_VIRTUAL_TABLE_ADDRESS(dir_index);
+    page_table_entry_t * pageentry = &table->pages[page_index];
+    if(!pageentry->present)
+        return 0;
+    return (pageentry->frame << 12) + (addr & 0xFFF);
+    
+}
 void map_page(page_directory_t * dir,v_addr_t virtual_address,p_frame_t physical_frame,uint32_t is_user,uint32_t is_writable);
 void map_region(page_directory_t * dir, v_addr_t start,p_frame_t physical_frame,uint32_t total_pages,uint32_t is_user,uint32_t is_writable);
 void flush_tlb_entry(v_addr_t address)
@@ -35,11 +49,9 @@ void allocate_page(page_directory_t * dir,v_addr_t virtual_address,uint32_t is_u
     p_frame_t allocate_address = (p_frame_t) allocate_block();
     map_page(dir,virtual_address,allocate_address,is_user,is_writable);
 }
-
 void kallocate_page(v_addr_t virtual_address){
     allocate_page(kernel_directory,virtual_address,0,1);
 }
-
 void allocate_region(page_directory_t * dir,v_addr_t virtual_address,uint32_t total_pages,uint32_t is_user,uint32_t is_writable){
     
     for (uint32_t i = 0; i < total_pages; i++)

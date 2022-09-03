@@ -30,9 +30,9 @@
 
 #define PCI_CONFIG_ACCESS_SIZE 0x100
 
-#define PCI_HEADER_DEVICE                   0x0
-#define PCI_HEADER_PCI_PCI_BRIDGE           0x1
-#define PCI_HEADER_PCI_CARDBUS_BRIDGE       0x2
+#define PCI_HEADER_DEVICE        0x0
+#define PCI_HEADER_BRIDGE        0x1
+#define PCI_HEADER_CARDBUS       0x2
 
 typedef union pci_command
 {
@@ -71,7 +71,7 @@ typedef struct pci_config_common{
     uint8_t bist;
 } __attribute__((packed)) pci_config_common_t;
 
-typedef struct pci_config_space_0
+typedef struct pci_device_config
 {
     struct pci_config_common common;
     uint32_t BAR0;
@@ -88,7 +88,7 @@ typedef struct pci_config_space_0
     uint8_t __;
     uint32_t ___;
     uint8_t interrupt_line, interrupt_pin, min_grant, max_latency;
-} __attribute__((packed)) pci_config_space_0_t;
+} __attribute__((packed)) pci_device_config_t;
 
 typedef struct pci_config_space_1
 {
@@ -144,5 +144,6 @@ typedef struct pci_config
 // pci_header_type_t pci_read_header_type(pci_command_t command);
 // int32_t pci_read_config_block(const intptr_t buffer,pci_command_t cmd);
 void pci_scan_list(list_t *list);
-
+void pci_install();
+pci_device_config_t * pci_get_device_config(uint8_t class,uint8_t subclass);
 #endif
