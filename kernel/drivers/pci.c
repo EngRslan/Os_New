@@ -13,7 +13,7 @@ list_t * pci_list;
 int32_t pci_read_config_block(const intptr_t buffer, pci_command_t cmd)
 {
     intptr_t _buffer = buffer;
-    for (uint32_t offset = 0; offset <= PCI_CONFIG_ACCESS_SIZE; offset += 4)
+    for (uint32_t offset = 0; offset < PCI_CONFIG_ACCESS_SIZE; offset += 4)
     {
         cmd.offset = offset;
         uint32_t buf = pci_read(cmd);

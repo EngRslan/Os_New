@@ -149,12 +149,23 @@ struct ide_device
 /**
  * @brief Initial IDE CONTROLLER
  * 
- * @param BAR0 
- * @param BAR1 
- * @param BAR2 
- * @param BAR3 
- * @param BAR4 
+ * @param BAR0 PCI BAR0 FROM PCI Config Space
+ * @param BAR1 PCI BAR1 FROM PCI Config Space
+ * @param BAR2 PCI BAR2 FROM PCI Config Space
+ * @param BAR3 PCI BAR3 FROM PCI Config Space
+ * @param BAR4 PCI BAR4 FROM PCI Config Space
  */
 
 void ide_install(uint32_t BAR0,uint32_t BAR1,uint32_t BAR2,uint32_t BAR3,uint32_t BAR4);
+/**
+ * @brief Read Data From ATA/ATAPI Devices
+ * 
+ * @param drive Drive Number 0 = Primary Master, 1 = Primary Slave, 2 = Secondary Master, 3 = Secondary Slave
+ * @param numsectors Number of total sectors to read
+ * @param lba // Start LBA Address to read from
+ * @param buffer //Memory Buffer To Read Into;
+ * @return uint8_t 
+ */
+uint8_t ide_read_sectors(uint8_t drive,uint8_t numsectors,uint32_t lba,ptr_t buffer);
+uint8_t ide_write_sectors(uint8_t drive,uint8_t numsectors,uint32_t lba,ptr_t buffer);
 #endif

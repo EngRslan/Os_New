@@ -21,29 +21,30 @@
 #include <kernel/system.h>
 #include <logger.h>
 #include <stdio.h>
+#include <string.h>
 
 // void print_tree(gtree_node_t * node);
 // int find_by_value(gtree_node_t * s);
 // void print_hierarchy(gtree_node_t * s,int depth);
 
-uint32_t pciConfigReadWord(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
-    uint32_t address;
-    uint32_t lbus  = (uint32_t)bus;
-    uint32_t lslot = (uint32_t)slot;
-    uint32_t lfunc = (uint32_t)func;
-    uint32_t tmp = 0;
+// uint32_t pciConfigReadWord(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
+//     uint32_t address;
+//     uint32_t lbus  = (uint32_t)bus;
+//     uint32_t lslot = (uint32_t)slot;
+//     uint32_t lfunc = (uint32_t)func;
+//     uint32_t tmp = 0;
  
-    // Create configuration address as per Figure 1
-    address = (uint32_t)((lbus << 16) | (lslot << 11) |
-              (lfunc << 8) | (offset & 0xFC) | ((uint32_t)0x80000000));
+//     // Create configuration address as per Figure 1
+//     address = (uint32_t)((lbus << 16) | (lslot << 11) |
+//               (lfunc << 8) | (offset & 0xFC) | ((uint32_t)0x80000000));
  
-    // Write out the address
-    outportl(0xCF8, address);
-    // Read in the data
-    // (offset & 2) * 8) = 0 will choose the first word of the 32-bit register
-    tmp = inportl(0xCFC);
-    return tmp;
-}
+//     // Write out the address
+//     outportl(0xCF8, address);
+//     // Read in the data
+//     // (offset & 2) * 8) = 0 will choose the first word of the 32-bit register
+//     tmp = inportl(0xCFC);
+//     return tmp;
+// }
 
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -124,7 +125,13 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("Installing IDE Controller");
   pci_device_config_t * cfg = pci_get_device_config(0x1,0x1);
   ide_install(cfg->BAR0,cfg->BAR1,cfg->BAR2,cfg->BAR3,cfg->BAR4);
+  log_information("IDE Controller Installed Successfully");
   
+
+  ptr_t test_read = kmalloc(0x1000);
+  memset(test_read,0xEC,0x1000);
+  ide_write_sectors(1,1,0,test_read);
+
   // uint32_t ss = pciConfigReadWord(0,1,1,PCI_BAR4);
   // list_t * list = list_create();
   // pci_scan_list(list);

@@ -17,9 +17,11 @@ kernel:
 	$(MAKE) --directory=$(KERNEL_DIR) build
 
 run:
-	qemu-system-i386 -boot d -drive file=$(ISO_NAME),media=cdrom,if=ide -s -S -serial stdio  -vga std -monitor telnet:127.0.0.1:55555,server,nowait;
+	qemu-system-i386 -boot d -drive file=$(ISO_NAME),media=cdrom,if=ide -drive file=hdd.img,media=disk,if=ide,format=raw -s -S -serial stdio  -vga std -nodefaults -monitor telnet:127.0.0.1:55555,server,nowait;
 bochs: build
 	bochs -q
+hdd:
+	dd if=/dev/zero of=hdd.img count=1440 bs=1024
 .PHONY: kernel clean
 clean:
 	$(MAKE) --directory=$(KERNEL_DIR) clean
