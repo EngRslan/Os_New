@@ -131,7 +131,7 @@ struct ide_channel{
     uint16_t ctrl;  // CONTROL BASE PORT
     uint16_t bmide; // BUS MASTER IDE
     uint8_t  nIEN;  // No Onterrupt
-} channels[2];
+} ;
 
 struct ide_device
 {
@@ -144,7 +144,7 @@ struct ide_device
     uint32_t command_sets;   // Supported Command Sets
     uint32_t size;           // Size in Sectors
     uint8_t  model[41];      // Model string
-} devices[4];
+} ;
 
 /**
  * @brief Initial IDE CONTROLLER

@@ -18,6 +18,7 @@
 #include <kernel/datastruct/list.h>
 #include <kernel/datastruct/gtree.h>
 #include <kernel/filesystems/vfs.h>
+#include <kernel/filesystems/iso9660.h>
 #include <kernel/system.h>
 #include <logger.h>
 #include <stdio.h>
@@ -128,9 +129,13 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("IDE Controller Installed Successfully");
   
 
-  ptr_t test_read = kmalloc(0x1000);
-  memset(test_read,0xEC,0x1000);
-  ide_write_sectors(1,1,0,test_read);
+  log_information("Installing ISO9660 FileSystem");
+  iso9660_install("/dev/hda","/");
+  log_information("ISO9660 FileSystem installed successfully");
+
+  // ptr_t test_read = kmalloc(0x1000);
+  // memset(test_read,0xEC,0x1000);
+  // ide_write_sectors(1,1,0,test_read);
 
   // uint32_t ss = pciConfigReadWord(0,1,1,PCI_BAR4);
   // list_t * list = list_create();
@@ -206,7 +211,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   // uint32_t device_id = read_pci(0,0,0,2);
   // uint32_t command = read_pci(0,0,0,4);
   // uint32_t status = read_pci(0,0,0,6);
-
+  print_h();
   for (;;) { }
   
 

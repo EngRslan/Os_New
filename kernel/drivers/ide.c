@@ -10,6 +10,9 @@
 #include <string.h>
 #include <stddef.h>
 
+struct ide_channel channels[2];
+struct ide_device devices[4];
+
 uint8_t ide_buffer[0x800] = {0};
 static volatile uint8_t ide_irq0_invoked = 0;
 static volatile uint8_t ide_irq1_invoked = 0;
@@ -447,6 +450,25 @@ uint8_t ide_write_sectors(uint8_t drive,uint8_t numsectors,uint32_t lba,ptr_t bu
     
     return err; 
 }
+uint32_t ide_vfs_read(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_t buffer){
+    return 0;
+}
+uint32_t ide_vfs_write(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_t buffer){
+    return 0;
+}
+uint8_t ide_vfs_mount_device(uint8_t drive){
+    if(drive>3 || !devices[drive].present)return 1;//Drive Not Found
+
+    vfs_node_t * vfs_node = (vfs_node_t *)kmalloc(sizeof(vfs_node_t));
+    vfs_node->device = (ptr_t)&devices[drive];
+    strcpy(vfs_node->name,(const char * []){"/dev/hda","/dev/hdb","/dev/hdc","/dev/hdd"}[drive]);
+    vfs_node->flags = FS_BLOCKDEVICE;
+    vfs_node->read = ide_vfs_read;
+    vfs_node->write = ide_vfs_write;
+
+    vfs_mount(vfs_node->name,vfs_node);
+    return 0;
+}
 void ide_install(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4)
 {
     channels[ATA_PRIMARY].base = (BAR0 & 0xFFFFFFFC) + 0x1F0 * (!BAR0);
@@ -464,7 +486,7 @@ void ide_install(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uin
     int32_t channel=0, drive=0, k=0, count = 0;
     for (channel = 0; channel < 2; channel++)
     {
-        for (drive = 0; drive < 2; drive ++)
+        for (drive = 0; drive < 2; drive ++,count++)
         {
             uint8_t err=0, type=IDE_ATA, status=0;
             devices[count].present = 0;
@@ -530,7 +552,7 @@ void ide_install(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uin
                 devices[count].model[k + 1] = ide_buffer[ATA_IDENT_MODEL + k];
             }
             devices[count].model[40] = 0;
-            count ++;
+            ide_vfs_mount_device(count);
         }
         
     }
