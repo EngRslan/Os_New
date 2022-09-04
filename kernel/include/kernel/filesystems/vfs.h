@@ -30,5 +30,7 @@ typedef struct vfs_entry
 
 void vfs_install();
 void vfs_mount(string_t mount_point,vfs_node_t * node);
+vfs_node_t * file_open(const string_t file_name,uint32_t flags);
+int32_t vfs_read(vfs_node_t * node,uint32_t offset,uint32_t size,char * buffer);
 void print_h();
 #endif

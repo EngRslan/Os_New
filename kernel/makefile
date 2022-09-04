@@ -18,7 +18,7 @@ CSRC= kernel.c \
 	$(MEM_DIR)/kheap.c $(MEM_DIR)/vmm.c $(MEM_DIR)/pmm.c \
 	$(DRIVERS_DIR)/vga.c $(DRIVERS_DIR)/keyboard.c  $(DRIVERS_DIR)/serial.c $(DRIVERS_DIR)/pit.c $(DRIVERS_DIR)/pci.c $(DRIVERS_DIR)/ide.c\
 	logging/logger.c \
-	$(FS)/vfs.c \
+	$(FS)/vfs.c $(FS)/iso9660.c\
   	$(CLIB_DIR)/stdio/scanf.c $(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c $(CLIB_DIR)/ctype/ctype.c \
 	$(DATA_STRUCT_DIR)/list.c $(DATA_STRUCT_DIR)/tree.c $(DATA_STRUCT_DIR)/gtree.c
 

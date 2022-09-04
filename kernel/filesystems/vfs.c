@@ -12,7 +12,13 @@ char *strdup(const char *src){
     strcpy(dst,src);
     return dst;
 }
-vfs_entry_t * get_mountpoint_recur(string_t path,gtree_node_t * subroot){
+int32_t vfs_read(vfs_node_t * node,uint32_t offset,uint32_t size,char * buffer){
+    if(node && node->read){
+        return node->read(node,offset,size,buffer);
+    }
+    return -1;
+}
+vfs_node_t * get_mountpoint_recur(string_t path,gtree_node_t * subroot){
     string_t token = strsep(&path,"/");
     if(token == NULL || strcmp(token,"") == 0){
         struct vfs_entry * entry = (struct vfs_entry *)subroot->value;
@@ -106,6 +112,12 @@ void vfs_mount(string_t path,vfs_node_t * node){
     }
 
     vfs_mount_recur(path+1,vfs_tree->root,node);
+}
+vfs_node_t * file_open(const string_t file_name,uint32_t flags){
+    string_t filename = strdup(file_name);
+    vfs_node_t * file_node = get_mountpoint(filename);
+    kfree(filename);
+    return file_node;
 }
 char tabs[50];
 void print_hierarchy(gtree_node_t * node,int depth){

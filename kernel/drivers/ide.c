@@ -451,6 +451,26 @@ uint8_t ide_write_sectors(uint8_t drive,uint8_t numsectors,uint32_t lba,ptr_t bu
     return err; 
 }
 uint32_t ide_vfs_read(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_t buffer){
+    uint32_t lba = offset/2048;
+    uint32_t lba_offset = offset%2048;
+
+    uint32_t lba_end = (offset + size -1) / 2048;
+    uint32_t lba_end_offset = (offset + size -1) % 2048;
+
+    char * buf_curr = buffer;
+    uint32_t counter = lba;
+    uint32_t read_size ;
+    uint32_t off,total=0;
+
+    while (counter  <= lba_end)
+    {
+        off = 0;
+        read_size = 2048;
+
+        // ide_read_sectors((ide_device_t *)node->device)
+    }
+    
+
     return 0;
 }
 uint32_t ide_vfs_write(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_t buffer){
