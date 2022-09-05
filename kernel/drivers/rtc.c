@@ -3,6 +3,7 @@
 #include <kernel/isr.h>
 #include <kernel/types.h>
 #include <kernel/bits.h>
+#include <stdio.h>
 
 #define BIN_ALIGN(x)((x & 0xF0)>>1)+ ((x & 0xF0)>>3) + (x & 0xf)
 
@@ -27,20 +28,31 @@ uint8_t bin_align(uint8_t num){
     return num;
 }
 uint8_t format_align(uint8_t num){
-    if(is_24h != 1){
-        return BIN_ALIGN(num);
+    if(is_24h == 0){
+        uint8_t is_pm = BITREAD(num,7);
+        uint8_t hour = num & 0x7F;
+        if(num == 12)return 0;
+        if(!is_pm) return num;
+        return num + 12;
     }
-    return is_24h;
+    return num;
 }
 void handle_rtc_inturrept(register_t * reg){
     _tm.tm_sec  = bin_align(read_cmos_register(CMOS_REG_SECONDS));
     _tm.tm_min  = bin_align(read_cmos_register(CMOS_REG_MINUTES));
-    _tm.tm_hour = bin_align(read_cmos_register(CMOS_REG_HOURS));
+    _tm.tm_hour = format_align(bin_align(read_cmos_register(CMOS_REG_HOURS)));
     _tm.tm_mday = bin_align(read_cmos_register(CMOS_REG_MDAY));
     _tm.tm_wday = bin_align(read_cmos_register(CMOS_REG_WDAY));
     _tm.tm_mon  = bin_align(read_cmos_register(CMOS_REG_MON));
-    _tm.tm_year = bin_align(read_cmos_register(CMOS_REG_YEAR));
+    uint8_t year = bin_align(read_cmos_register(CMOS_REG_YEAR));
+    uint8_t century = bin_align(read_cmos_register(CMOS_REG_CENTURY));
+    _tm.tm_year = ((century * 100) + century - 1900);
+    _tm.tm_isdst = 0;
     read_cmos_register(CMOS_REG_C);
+}
+
+void str_date(char * str){
+    sprintf(str,"%d/%d/%d %d:%d:%d",_tm.tm_year+1900,_tm.tm_mon,_tm.tm_mday,_tm.tm_hour,_tm.tm_min,_tm.tm_sec);
 }
 void install_interrupt(){
     __asm__ __volatile__("cli");
@@ -49,6 +61,7 @@ void install_interrupt(){
     __asm__ __volatile__("sti");
 
 }
+
 void rtc_install(){
     register_interrupt_handler(IRQ_BASE + IRQ8_CMOS_CLOCK,handle_rtc_inturrept);
     uint8_t status_b = read_cmos_register(CMOS_REG_B);

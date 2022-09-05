@@ -17,7 +17,7 @@
 #define CMOS_REG_B          0X0B
 #define CMOS_REG_C          0X0C
 
-typedef struct tm
+struct tm
 {
     int32_t tm_sec;     // seconds, 0 to 59
     int32_t tm_min;     // minutes, 0 to 59
@@ -31,4 +31,5 @@ typedef struct tm
 };
 
 void rtc_install();
+void str_date(char * str);
 #endif
