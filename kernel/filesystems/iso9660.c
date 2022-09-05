@@ -1,5 +1,6 @@
 #include <kernel/filesystems/vfs.h>
 #include <kernel/mem/kheap.h>
+#include <string.h>
 typedef struct
 {
     uint8_t years;
@@ -60,9 +61,9 @@ typedef struct iso9660_fs
     uint32_t sector_size;
     PVD_t * pvd;
     vfs_node_t * device;
-
 } iso9660_fs_t;
-read_disk_block(iso9660_fs_t * fs,uint32_t block,char * buffer){
+
+void read_disk_block(iso9660_fs_t * fs,uint32_t block,char * buffer){
     vfs_read(fs->device,fs->sector_size * block,fs->sector_size,buffer);
 }
 void iso9660_install(string_t device,string_t mount_point){
@@ -71,4 +72,12 @@ void iso9660_install(string_t device,string_t mount_point){
     isofs->sector_size = 2048;
     isofs->pvd = (PVD_t *)kmalloc(isofs->sector_size);
     read_disk_block(isofs,0x10,(void *)isofs->pvd);
+    isofs->sector_size = isofs->pvd->logical_block_size_lsb;
+    vfs_node_t * iso9660_vfs_node = kmalloc(sizeof(vfs_node_t));
+    strcpy(iso9660_vfs_node->name,"/");
+    iso9660_vfs_node->device = (uint32_t)isofs;
+    iso9660_vfs_node->address = (uint32_t)isofs->pvd->root_directory.location_lba_lsb;
+    iso9660_vfs_node->size = (uint32_t)isofs->pvd->root_directory.size_lsb;
+    iso9660_vfs_node->flags = FS_DIRECTORY;
+    vfs_mount(mount_point,iso9660_vfs_node);
 }

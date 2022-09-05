@@ -2,6 +2,7 @@
 #define VFS_H
 #include <kernel/types.h>
 #define FS_BLOCKDEVICE 0x08
+#define FS_DIRECTORY 0x02
 
 struct vfs_node;
 
@@ -11,12 +12,12 @@ typedef uint32_t (*write_callback)(struct vfs_node *,uint32_t offset,uint32_t si
 typedef struct vfs_node
 {
     char name[256];
-    ptr_t device;
+    uint32_t device;
     uint32_t size;
     uint32_t fs_type;
     uint32_t flags;
     uint32_t offset;
-
+    uint32_t address;
     read_callback read;
     write_callback write;
 } vfs_node_t;

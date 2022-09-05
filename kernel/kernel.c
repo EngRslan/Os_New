@@ -8,6 +8,7 @@
 #include <kernel/mem/vmm.h>
 #include <kernel/mem/kheap.h>
 #include <kernel/drivers/vga.h>
+#include <kernel/drivers/rtc.h>
 #include <kernel/drivers/keyboard.h>
 #include <kernel/drivers/serial.h>
 #include <kernel/drivers/vesa.h>
@@ -80,6 +81,9 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
 
   idt_install();
   log_information("Installing IDT .installed");
+  log_information("Installing Real Time Clock RTC");
+  rtc_install();
+  log_information("Installing Real Time Clock RTC Installed Successfully");
 
   syscalls_install();
   // if(BITREAD(mbi->flags,11)){
@@ -158,7 +162,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   //     {
 
   //       pci_config_space_1_t * cfg1 = (pci_config_space_1_t *)config->config;
-  //       log_trace("Bridge Found (bus:%d, slot:%d, function: %d) . Vendor:0x%x, id:0x%x, class:0x%x, subclass:0x%x",
+  //       ljust attach this code to the bottom of your IRQ handler to be sure you get another interrupt. If you're using Bochs, it is also recommended to read Status Register C after initialising the RTCog_trace("Bridge Found (bus:%d, slot:%d, function: %d) . Vendor:0x%x, id:0x%x, class:0x%x, subclass:0x%x",
   //         config->bus,config->device,config->function,config->config->vendor_id,config->config->device_id,config->config->class_code,config->config->sub_class);
   //       break;
   //     }

@@ -55,7 +55,7 @@ vfs_node_t * get_mountpoint(string_t path){
     if(!path || path[0] != '/')return NULL;
     if(strlen(path) == 1){
         struct vfs_entry * entry = (struct vfs_entry *)vfs_tree->root->value;
-        entry->file;
+        return entry->file;
     }
     path++;
     return get_mountpoint_recur(path,vfs_tree->root);

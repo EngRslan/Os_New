@@ -451,27 +451,43 @@ uint8_t ide_write_sectors(uint8_t drive,uint8_t numsectors,uint32_t lba,ptr_t bu
     return err; 
 }
 uint32_t ide_vfs_read(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_t buffer){
-    uint32_t lba = offset/2048;
-    uint32_t lba_offset = offset%2048;
+    struct ide_device device = devices[node->device];
+    uint32_t sector_size = device.type == IDE_ATA?512:2048;
+    uint32_t lba = offset/sector_size;
+    uint32_t lba_offset = offset%sector_size;
 
-    uint32_t lba_end = (offset + size -1) / 2048;
-    uint32_t lba_end_offset = (offset + size -1) % 2048;
+    uint32_t lba_end = (offset + size -1) / sector_size;
+    uint32_t lba_end_offset = (offset + size -1) % sector_size;
 
     char * buf_curr = buffer;
     uint32_t counter = lba;
     uint32_t read_size ;
     uint32_t off,total=0;
-
+    ptr_t sector_buffer = kmalloc(2048);
     while (counter  <= lba_end)
     {
         off = 0;
-        read_size = 2048;
+        read_size = sector_size;
+        ide_read_sectors(node->device,1,counter,sector_buffer);
+        if(counter == lba){
+            off=lba_offset;
+            read_size = sector_size - off;
+        }
+        if (counter == lba_end)
+        {
+            read_size = lba_end_offset;
+        }
 
-        // ide_read_sectors((ide_device_t *)node->device)
+        memcpy(buf_curr,sector_buffer+off,read_size);
+        buf_curr += read_size;
+        total = total+read_size;
+        counter ++;
     }
+
+    kfree(sector_buffer);
+    return total;
     
 
-    return 0;
 }
 uint32_t ide_vfs_write(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_t buffer){
     return 0;
@@ -480,7 +496,7 @@ uint8_t ide_vfs_mount_device(uint8_t drive){
     if(drive>3 || !devices[drive].present)return 1;//Drive Not Found
 
     vfs_node_t * vfs_node = (vfs_node_t *)kmalloc(sizeof(vfs_node_t));
-    vfs_node->device = (ptr_t)&devices[drive];
+    vfs_node->device = drive;
     strcpy(vfs_node->name,(const char * []){"/dev/hda","/dev/hdb","/dev/hdc","/dev/hdd"}[drive]);
     vfs_node->flags = FS_BLOCKDEVICE;
     vfs_node->read = ide_vfs_read;
