@@ -36,6 +36,21 @@ uint32_t pci_read(pci_command_t command)
     outportl(0xCF8, command.bits);
     return inportl(0xCFC);
 }
+void pci_writel(uint8_t bus,uint8_t device,uint8_t func, uint32_t offset, uint32_t value){
+    pci_command_t command = {
+        .always_zero = 0,
+        .bus = bus,
+        .device = device,
+        .enable = 1,
+        .function = func,
+        .offset=offset
+    };
+    command.offset &= 0xFC;
+    command.offset >>= 2;
+
+    outportl(0xCF8, command.bits);
+    outportl(0xCFC, command.bits);
+}
 pci_header_type_t pci_read_header_type(uint32_t bus, uint32_t device, uint32_t function)
 {
     pci_command_t command = {
@@ -91,12 +106,21 @@ void pci_install(){
     pci_scan_list(pci_list);
 }
 
-pci_device_config_t * pci_get_device_config(uint8_t class,uint8_t subclass){
+pci_config_t * pci_get_device(uint8_t class,uint8_t subclass){
     foreach(item,pci_list){
         pci_config_t * cfg = (pci_config_t *)item->value_ptr;
         if(cfg->config->class_code == class && cfg->config->sub_class == subclass){
-            return (pci_device_config_t *)cfg->config;
+            return cfg;
         }
     }
     return NULL;
 }
+
+pci_device_config_t * pci_get_device_config(uint8_t class,uint8_t subclass){
+    pci_config_t * pci_dev = pci_get_device(class,subclass);
+    if(pci_dev){
+        return (pci_device_config_t *)pci_dev->config;
+    }
+    return NULL;
+}
+

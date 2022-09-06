@@ -45,6 +45,7 @@ void free_page(page_directory_t * dir,v_addr_t virtual_address){
     free_block((void *)(page_entry->frame << 12));
     flush_tlb_entry(virtual_address);
 }
+
 void allocate_page(page_directory_t * dir,v_addr_t virtual_address,uint32_t is_user,uint32_t is_writable){
     p_frame_t allocate_address = (p_frame_t) allocate_block();
     map_page(dir,virtual_address,allocate_address,is_user,is_writable);

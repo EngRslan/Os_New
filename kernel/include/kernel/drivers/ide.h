@@ -1,6 +1,8 @@
 #ifndef IDE_H
 #define IDE_H
 #include <kernel/types.h>
+#include <kernel/mem/pmm.h>
+#include <kernel/drivers/pci.h>
 
 
 /*
@@ -122,6 +124,15 @@
 #define ATA_REG_ALTSTATUS       0x0C
 #define ATA_REG_DEVADDRESS      0x0D
 
+/*
+    DMA Address
+*/
+#define DMA_PRIMARY_COMMAND     0x00
+#define DMA_PRIMARY_STATUS      0x02
+#define DMA_PRIMARY_PRDT        0x04
+#define DMA_SECONDARY_COMMAND   0x08
+#define DMA_SECONDARY_STATUS    0x0A
+#define DMA_SECONDARY_PRDT      0x0C
 /**
  * @brief IDE Channel Configuration
  * 
@@ -145,18 +156,18 @@ struct ide_device
     uint32_t size;           // Size in Sectors
     uint8_t  model[41];      // Model string
 } ;
-
+struct ide_prdt_setup
+{
+    uint32_t ph_addr;
+    uint16_t trans_size;
+    uint16_t msb_mark;
+} __attribute__((packed));
 /**
  * @brief Initial IDE CONTROLLER
  * 
- * @param BAR0 PCI BAR0 FROM PCI Config Space
- * @param BAR1 PCI BAR1 FROM PCI Config Space
- * @param BAR2 PCI BAR2 FROM PCI Config Space
- * @param BAR3 PCI BAR3 FROM PCI Config Space
- * @param BAR4 PCI BAR4 FROM PCI Config Space
  */
 
-void ide_install(uint32_t BAR0,uint32_t BAR1,uint32_t BAR2,uint32_t BAR3,uint32_t BAR4);
+void ide_install(pci_config_t * ide_device);
 /**
  * @brief Read Data From ATA/ATAPI Devices
  * 

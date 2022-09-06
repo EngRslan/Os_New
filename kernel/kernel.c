@@ -107,8 +107,8 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("PCI Installed Successfully");
 
   log_information("Installing IDE Controller");
-  pci_device_config_t * cfg = pci_get_device_config(0x1,0x1);
-  ide_install(cfg->BAR0,cfg->BAR1,cfg->BAR2,cfg->BAR3,cfg->BAR4);
+  pci_config_t * cfg = pci_get_device(0x1,0x1);
+  ide_install(cfg);
   log_information("IDE Controller Installed Successfully");
   
 
@@ -118,6 +118,9 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   char date[50];
   str_date(date);
   log_information("current GMT Time Now %s",date);
+
+  ptr_t kmm = kmalloc(600);
+  ide_read_sectors(1,1,0,kmm);
   // print_h();
   for (;;) { }
   
