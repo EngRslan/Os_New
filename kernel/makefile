@@ -16,7 +16,7 @@ FS=./filesystems
 CSRC= kernel.c \
 	$(GDT_DIR)/gdt.c $(IDT_DIR)/syscalls.c $(IDT_DIR)/idt.c $(IRQ_DIR)/irq.c $(DRIVERS_DIR)/pic.c $(SYS_DIR)/port_io.c \
 	$(MEM_DIR)/kheap.c $(MEM_DIR)/vmm.c $(MEM_DIR)/pmm.c \
-	$(DRIVERS_DIR)/rtc.c $(DRIVERS_DIR)/vga.c $(DRIVERS_DIR)/keyboard.c  $(DRIVERS_DIR)/serial.c $(DRIVERS_DIR)/pit.c $(DRIVERS_DIR)/pci.c $(DRIVERS_DIR)/ide.c\
+	$(DRIVERS_DIR)/rtc.c $(DRIVERS_DIR)/vga.c $(DRIVERS_DIR)/keyboard.c  $(DRIVERS_DIR)/serial.c $(DRIVERS_DIR)/pit.c $(DRIVERS_DIR)/pci.c $(DRIVERS_DIR)/ide.c $(DRIVERS_DIR)/rtl8139.c\
 	logging/logger.c \
 	$(FS)/vfs.c $(FS)/iso9660.c\
   	$(CLIB_DIR)/stdio/scanf.c $(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c $(CLIB_DIR)/ctype/ctype.c \

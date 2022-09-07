@@ -149,6 +149,7 @@ struct ide_channel{
     uint16_t bmide; // BUS MASTER IDE
     uint8_t  nIEN;  // No Interrupt
     uint32_t prdt_physical;
+    ptr_t dma_buffer;
     struct ide_prdt_setup prdt;
 } ;
 

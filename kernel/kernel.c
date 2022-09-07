@@ -15,6 +15,7 @@
 #include <kernel/drivers/pit.h>
 #include <kernel/drivers/pci.h>
 #include <kernel/drivers/ide.h>
+#include <kernel/drivers/rtl8139.h>
 #include <kernel/types.h>
 #include <kernel/datastruct/list.h>
 #include <kernel/datastruct/gtree.h>
@@ -107,8 +108,8 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("PCI Installed Successfully");
 
   log_information("Installing IDE Controller");
-  pci_config_t * cfg = pci_get_device(0x1,0x1);
-  ide_install(cfg);
+  pci_config_t * ide_controller = pci_get_device(0x1,0x1);
+  ide_install(ide_controller);
   log_information("IDE Controller Installed Successfully");
   
 
@@ -119,9 +120,15 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   str_date(date);
   log_information("current GMT Time Now %s",date);
 
-  ptr_t kmm = kmalloc(600);
-  memset(kmm,0xC0,0x200);
-  ide_write_sectors(1,1,0,kmm);
+  log_information("Installing Network Controller");
+  pci_config_t * eth_controller = pci_get_device(0x2,0x0);
+  rtl8139_install(eth_controller);
+  log_information("Installing Network Controller Successfully");
+
+  // ptr_t kmm = kmalloc(600);
+  // memset(kmm,0xDD,0x200);
+  // ide_write_sectors(1,1,0,kmm);
+  // ide_read_sectors(1,1,0,kmm);
   // print_h();
   for (;;) { }
   

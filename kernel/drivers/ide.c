@@ -19,13 +19,8 @@ uint8_t ide_buffer[0x800] = {0};
 static volatile uint8_t ide_irq0_invoked = 0;
 static volatile uint8_t ide_irq1_invoked = 0;
 static int8_t atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-ptr_t channel1_dma = NULL;
-ptr_t channel2_dma = NULL;
 uint8_t is_dma_support = 0;
-uint32_t prdt0_ph_addr = 0;
-uint32_t prdt1_ph_addr = 0;
-void * dma_buffer = VIRTUAL_DMA_ADDRESS;
+
 void ide_write(uint8_t channel, uint8_t reg, uint8_t data)
 {
     if (reg >= ATA_REG_SECTORCOUNT1 && reg <= ATA_REG_LBA5)
@@ -185,9 +180,11 @@ void ide_wait_irq(uint8_t channel){
 }
 void irq_primary_handler(register_t * reg){
     ide_irq0_invoked =1;
+    log_trace("IDE: Primary Channel IRQ Arrived");
 }
 void irq_secondary_handler(register_t * reg){
     ide_irq1_invoked =1;
+    log_trace("IDE: Secondary Channel IRQ Arrived");
 }
 uint8_t ide_ata_access(uint8_t direction,uint8_t drive, uint32_t lba, uint8_t numsectors,ptr_t buffer){
     uint8_t lba_mode/*0:CHS;1:LBA28;2LBA48*/, dma/*0:NO_DMA;1:DMA*/, cmd;
@@ -309,30 +306,60 @@ uint8_t ide_ata_access(uint8_t direction,uint8_t drive, uint32_t lba, uint8_t nu
 
         if(direction == ATA_READ){
             // DMA_READ
+            enable_irq(channel);
             outportl(channels[channel].bmide + DMA_PRDT,channels[channel].prdt_physical);
             outportb(channels[channel].bmide + DMA_COMMAND,0x8 | 0x1);
-            ide_polling(channel);
+            //ide_polling(channel);
+            waitirq_read:
+            ide_wait_irq(channel);
             uint8_t dma_device_status = inportb(channels[channel].bmide + DMA_STATUS);
-            if(BITREAD(dma_device_status,1)){
-                return 1;
+            if(BITREAD(dma_device_status,2) == 0){ //if irq arraived and bit num 2 not set so this irq not for us wait again
+                goto waitirq_read;
+            }
+            outportb(channels[channel].bmide + DMA_STATUS,0); // Reset IRQ;
+            outportb(channels[channel].bmide + DMA_COMMAND,0); // Reset and stop DMA device;
+            if(BITREAD(dma_device_status,1) == 1){
+                disable_irq(channel);
+                return 3;//DMA Failed To READ
             }
 
-            //copy from prdt to buffer
-            memcpy(buffer,VIRTUAL_DMA_ADDRESS + (channel * (PAGE_SIZE / 2)),sector_size);
-            
+            uint8_t device_status = ide_read(channel,ATA_REG_STATUS);
+            if(BITREAD(device_status,ATA_SR_ERR)){
+                disable_irq(channel);
+                return 4; // device read error
+            }
 
+
+            //copy from prdt to buffer
+            memcpy(buffer,channels[channel].dma_buffer,sector_size);
+            disable_irq(channel);
         }else{
             //copy from buffer to prdt
-            memcpy(VIRTUAL_DMA_ADDRESS + (channel * (PAGE_SIZE / 2)),buffer,sector_size);
-
+            memcpy(channels[channel].dma_buffer,buffer,sector_size);
+            enable_irq(channel);
             // DMA_Write
             outportl(channels[channel].bmide + DMA_PRDT,channels[channel].prdt_physical);
             outportb(channels[channel].bmide + DMA_COMMAND,0x1);
-            ide_polling(channel);
+            //ide_polling(channel);
+            waitirq_write:
+            ide_wait_irq(channel);
             uint8_t dma_device_status = inportb(channels[channel].bmide + DMA_STATUS);
-            if(BITREAD(dma_device_status,1)){
-                return 1;
+            if(BITREAD(dma_device_status,2) == 0){ //if irq arraived and bit num 2 not set so this irq not for us wait again
+                goto waitirq_write;
             }
+            outportb(channels[channel].bmide + DMA_STATUS,0); // Reset IRQ;
+            outportb(channels[channel].bmide + DMA_COMMAND,0); // Reset and stop DMA device;
+            if(BITREAD(dma_device_status,1) == 1){
+                disable_irq(channel);
+                return 3;//DMA Failed To write
+            }
+
+            uint8_t device_status = ide_read(channel,ATA_REG_STATUS);
+            if(BITREAD(device_status,ATA_SR_ERR) || BITREAD(device_status,ATA_SR_DF)){
+                disable_irq(channel);
+                return 4; // device write error
+            }
+            disable_irq(channel);
         }
     }
     else{
@@ -413,7 +440,11 @@ uint8_t ide_atapi_read(uint8_t drive,uint32_t lba, uint8_t numsectors,ptr_t buff
 
     io_wait(channel);
 
-    ide_write(channel,ATA_REG_FEATURES,0); //POI Mode
+    if(is_dma_support){
+        ide_write(channel,ATA_REG_FEATURES,1); //DMA Mode
+    }else{
+        ide_write(channel,ATA_REG_FEATURES,0); //POI Mode
+    }
 
     ide_write(channel,ATA_REG_LBA1,(sector_size_words * 2) & 0xFF);
     ide_write(channel,ATA_REG_LBA2,(sector_size_words * 2) >> 8);
@@ -428,25 +459,56 @@ uint8_t ide_atapi_read(uint8_t drive,uint32_t lba, uint8_t numsectors,ptr_t buff
         packet++;
     }
 
-    for (uint8_t sector = 0; sector < numsectors; sector++)
-    {
-        if((err = ide_polling(channel))){
-            return err;
+    if(is_dma_support){
+        channels[channel].prdt.trans_size = 0;
+        channels[channel].prdt.msb_mark = 0x8000;
+        outportl(channels[channel].bmide + DMA_PRDT,channels[channel].prdt_physical);
+        outportb(channels[channel].bmide + DMA_COMMAND,0x8 | 0x1);
+        // uint8_t err = ide_polling(channel);
+        waitirq:
+        ide_wait_irq(channel);
+        uint8_t dma_device_status = inportb(channels[channel].bmide + DMA_STATUS);
+        if(BITREAD(dma_device_status,2) == 0){ //if irq arraived and bit num 2 not set so this irq not for us wait again
+            goto waitirq;
+        }
+        outportb(channels[channel].bmide + DMA_STATUS,0); // Reset IRQ;
+        outportb(channels[channel].bmide + DMA_COMMAND,0); // Reset and stop device;
+        if(BITREAD(dma_device_status,1) == 1){
+            return 3;//DMA Failed To READ
         }
 
-        uint16_t * sector_buffer = (uint16_t *)buffer;
-        uint32_t sector_offset_words = sector * sector_size_words;
-
-        for (uint32_t seek = 0; seek < sector_size_words; seek++)
-        {
-            uint32_t offset = sector_offset_words + seek;
-            *sector_buffer = inports(bus);
-            sector_buffer++;
+        uint8_t device_status = ide_read(channel,ATA_REG_STATUS);
+        if(BITREAD(device_status,ATA_SR_ERR)){
+            return 4; // device read error
         }
-        
+
+        //copy from prdt to buffer
+        memcpy(buffer,channels[channel].dma_buffer,sector_size_words *2);
     }
+    else
+    {
+        for (uint8_t sector = 0; sector < numsectors; sector++)
+        {
+            if((err = ide_polling(channel))){
+                return err;
+            }
 
-    ide_wait_irq(channel);
+            uint16_t * sector_buffer = (uint16_t *)buffer;
+            uint32_t sector_offset_words = sector * sector_size_words;
+
+            for (uint32_t seek = 0; seek < sector_size_words; seek++)
+            {
+                uint32_t offset = sector_offset_words + seek;
+                *sector_buffer = inports(bus);
+                sector_buffer++;
+            }
+            
+        }
+        ide_wait_irq(channel);
+    }
+    
+
+    
 
     while (BITREAD(ide_read(channel, ATA_REG_STATUS),ATA_SR_BSY) || BITREAD(ide_read(channel, ATA_REG_STATUS),ATA_SR_DRQ)){ }
     return 0;
@@ -695,35 +757,19 @@ void ide_install(pci_config_t * ide_device)
     }
 
     if(BAR4 != 0 && BITREAD(BAR4,0)){
-        // Setup DMA
+        // Setup IDE Busmastering
         allocate_page(kernel_directory,VIRTUAL_DMA_ADDRESS,0,1);
         memset((void *)VIRTUAL_DMA_ADDRESS,0,PAGE_SIZE);
         for (uint8_t channel = 0; channel < 2; channel++)
         {
-            channels[channel].prdt.ph_addr = virtual2physical(VIRTUAL_DMA_ADDRESS + (channel * (PAGE_SIZE / 2)));
+            channels[channel].dma_buffer = (ptr_t)VIRTUAL_DMA_ADDRESS + (channel * (PAGE_SIZE / 2));
+            channels[channel].prdt.ph_addr = virtual2physical((v_addr_t)channels[channel].dma_buffer);
             channels[channel].prdt_physical = virtual2physical((v_addr_t)&channels[channel].prdt);
             channels[channel].prdt.trans_size = 0;
             channels[channel].prdt.msb_mark = 0x8000;
             outportb(channels[channel].bmide + DMA_COMMAND,0);
         }
         
-        // uint32_t dma_physical_address_channel1 = virtual2physical(VIRTUAL_DMA_ADDRESS);
-        // uint32_t dma_physical_address_channel2 = dma_physical_address_channel1 + (PAGE_SIZE / 2);
-        // prdt[0].ph_addr = dma_physical_address_channel1;
-        // prdt[1].ph_addr = dma_physical_address_channel2;
-        // prdt[0].trans_size = 0;
-        // prdt[1].trans_size = 0;
-        // prdt[0].msb_mark = 0;
-        // prdt[1].msb_mark = 0;
-        // channels[channel].prdt_physical = virtual2physical((v_addr_t)&prdt[channel]);
-        // prdt0_ph_addr = virtual2physical((v_addr_t)&prdt[0]);
-        // prdt1_ph_addr = virtual2physical((v_addr_t)&prdt[1]);
-        // bus_mastering_baseio = BAR4;
-        // BITCLEAR(bus_mastering_baseio,0);
-        // outportb(channels[channel].bmide + DMA_COMMAND,0);
-        // outportb(DMA_SECONDARY_COMMAND,0);
-        // outportl(DMA_PRIMARY_PRDT,prdt0_ph_addr);
-        // outportl(DMA_SECONDARY_PRDT,prdt1_ph_addr);
 
         //Enable IDE Bus Mastering
         uint32_t dev_command = _ide_device->common.command;
