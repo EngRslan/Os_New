@@ -120,7 +120,8 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("current GMT Time Now %s",date);
 
   ptr_t kmm = kmalloc(600);
-  ide_read_sectors(1,1,0,kmm);
+  memset(kmm,0xC0,0x200);
+  ide_write_sectors(1,1,0,kmm);
   // print_h();
   for (;;) { }
   

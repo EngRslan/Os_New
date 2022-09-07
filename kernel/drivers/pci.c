@@ -49,7 +49,37 @@ void pci_writel(uint8_t bus,uint8_t device,uint8_t func, uint32_t offset, uint32
     command.offset >>= 2;
 
     outportl(0xCF8, command.bits);
-    outportl(0xCFC, command.bits);
+    outportl(0xCFC, value);
+}
+void pci_writew(uint8_t bus,uint8_t device,uint8_t func, uint32_t offset, uint16_t value){
+    pci_command_t command = {
+        .always_zero = 0,
+        .bus = bus,
+        .device = device,
+        .enable = 1,
+        .function = func,
+        .offset=offset
+    };
+    command.offset &= 0xFC;
+    command.offset >>= 2;
+
+    outportl(0xCF8, command.bits);
+    outports(0xCFC, value);
+}
+uint32_t pci_readl(uint8_t bus,uint8_t device,uint8_t func, uint32_t offset){
+    pci_command_t command = {
+        .always_zero = 0,
+        .bus = bus,
+        .device = device,
+        .enable = 1,
+        .function = func,
+        .offset=offset
+    };
+    command.offset &= 0xFC;
+    command.offset >>= 2;
+
+    outportl(0xCF8, command.bits);
+    return inportl(0xCFC);
 }
 pci_header_type_t pci_read_header_type(uint32_t bus, uint32_t device, uint32_t function)
 {

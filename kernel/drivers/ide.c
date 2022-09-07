@@ -14,19 +14,18 @@
 
 struct ide_channel channels[2];
 struct ide_device devices[4];
-struct ide_prdt_setup prdt[2];
 
 uint8_t ide_buffer[0x800] = {0};
 static volatile uint8_t ide_irq0_invoked = 0;
 static volatile uint8_t ide_irq1_invoked = 0;
 static int8_t atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-uint32_t bus_mastering_baseio=0;
+
 ptr_t channel1_dma = NULL;
 ptr_t channel2_dma = NULL;
 uint8_t is_dma_support = 0;
 uint32_t prdt0_ph_addr = 0;
 uint32_t prdt1_ph_addr = 0;
-
+void * dma_buffer = VIRTUAL_DMA_ADDRESS;
 void ide_write(uint8_t channel, uint8_t reg, uint8_t data)
 {
     if (reg >= ATA_REG_SECTORCOUNT1 && reg <= ATA_REG_LBA5)
@@ -286,38 +285,54 @@ uint8_t ide_ata_access(uint8_t direction,uint8_t drive, uint32_t lba, uint8_t nu
     ide_write(channel, ATA_REG_COMMAND, cmd);               // Send the Command.
 
     if(dma){
-        
 
         /*
             command
-            0 => START/Stop Bit 0=Normal, 1=DMA MODE
+            bit
+            0   => START/Stop Bit 0=Normal, 1=DMA MODE
             1:6 => Must Be 0;
-            7 => Read/Write 0=Write , 1=Read
+            7   => Read/Write 0=Write , 1=Read
         */
+
+       /*
+            Status
+            0   =>   1 = DMA is Already Active   0=Last PRD has been used up.
+            1   =>   1 = DMA Transfer Failed     0=DMA Successfully Done
+            2   =>   1 =                         0=IRQ RECIEVED AND OS Handle IT (must restet this bin after every irq)
+            3,4 =>   unused
+            5,6 =>   Initial bits set by bios if the master or slave drive are respictively
+            7   =>   obsolete for alod computers
+       */
         
-        prdt[channel].trans_size = sector_size;
+        channels[channel].prdt.trans_size = sector_size;
+        channels[channel].prdt.msb_mark = 0x8000;
+
         if(direction == ATA_READ){
             // DMA_READ
-            if(channel == 0){
-                outportl(DMA_PRIMARY_PRDT,prdt0_ph_addr);
-                outportb(DMA_PRIMARY_COMMAND,0x8 | 0x1);
-                ide_polling(channel);
-                uint8_t dma_device_status = inportb(DMA_PRIMARY_STATUS);
-                dma_device_status = inportb(DMA_PRIMARY_STATUS);
-                
-
-            }else{
-                outportl(DMA_SECONDARY_PRDT,prdt1_ph_addr);
-                outportb(DMA_SECONDARY_COMMAND,0x8 | 0x1);
-                ide_polling(channel);
-                
+            outportl(channels[channel].bmide + DMA_PRDT,channels[channel].prdt_physical);
+            outportb(channels[channel].bmide + DMA_COMMAND,0x8 | 0x1);
+            ide_polling(channel);
+            uint8_t dma_device_status = inportb(channels[channel].bmide + DMA_STATUS);
+            if(BITREAD(dma_device_status,1)){
+                return 1;
             }
 
-            
+            //copy from prdt to buffer
+            memcpy(buffer,VIRTUAL_DMA_ADDRESS + (channel * (PAGE_SIZE / 2)),sector_size);
             
 
         }else{
-            return 0;
+            //copy from buffer to prdt
+            memcpy(VIRTUAL_DMA_ADDRESS + (channel * (PAGE_SIZE / 2)),buffer,sector_size);
+
+            // DMA_Write
+            outportl(channels[channel].bmide + DMA_PRDT,channels[channel].prdt_physical);
+            outportb(channels[channel].bmide + DMA_COMMAND,0x1);
+            ide_polling(channel);
+            uint8_t dma_device_status = inportb(channels[channel].bmide + DMA_STATUS);
+            if(BITREAD(dma_device_status,1)){
+                return 1;
+            }
         }
     }
     else{
@@ -557,7 +572,43 @@ void ide_install(pci_config_t * ide_device)
              BAR3=_ide_device->BAR3, 
              BAR4=_ide_device->BAR4;
 
-    
+    uint8_t PROGIF=_ide_device->common.prog_if;
+
+    if(BITREAD(PROGIF,0)==1)
+    {
+        //Primary Channel Native mode
+        if(BITREAD(PROGIF,1)==1){
+            // can i convert native mode to compitibilty mode
+            //TODO Switch To Compitibilty mode
+        }
+        else{
+            log_error("PCI IDE Primary Channel In Native Mode and cannot switch to compitiblty mode");
+        }
+
+    }
+
+    if(BITREAD(PROGIF,2)==1)
+    {
+        //Secondary Channel Native mode
+        if(BITREAD(PROGIF,3)==1)
+        {
+            // can i convert native mode to compitibilty mode
+            //TODO Switch To Compitibilty mode
+        }
+        else
+        {
+            log_error("PCI IDE Primary Channel In Native Mode and cannot switch to compitiblty mode");
+        }
+
+    }
+
+    if(BITREAD(PROGIF,7)==0){
+        log_warning("PCI IDE Dosn't Support DMA Mode And Will Use PIO Mode");
+    }
+
+
+
+    //Primary channel in compatibilty mode port (0x1F0->0x1F7,0x3F6,IRQ14)
     channels[ATA_PRIMARY].base = (BAR0 & 0xFFFFFFFC) + 0x1F0 * (!BAR0);
     channels[ATA_PRIMARY].ctrl = (BAR1 & 0xFFFFFFFC) + 0x3F6 * (!BAR1);
     channels[ATA_PRIMARY].bmide = BAR4 & 0xFFFFFFFC ;
@@ -640,49 +691,58 @@ void ide_install(pci_config_t * ide_device)
             }
             devices[count].model[40] = 0;
             ide_vfs_mount_device(count);
-        }
-        
+        } 
     }
 
     if(BAR4 != 0 && BITREAD(BAR4,0)){
         // Setup DMA
         allocate_page(kernel_directory,VIRTUAL_DMA_ADDRESS,0,1);
         memset((void *)VIRTUAL_DMA_ADDRESS,0,PAGE_SIZE);
-        uint32_t dma_physical_address_channel1 = virtual2physical(VIRTUAL_DMA_ADDRESS);
-        uint32_t dma_physical_address_channel2 = dma_physical_address_channel1 + (PAGE_SIZE / 2);
-        prdt[0].ph_addr = dma_physical_address_channel1;
-        prdt[1].ph_addr = dma_physical_address_channel2;
-        prdt[0].trans_size = 0;
-        prdt[1].trans_size = 0;
-        prdt[0].msb_mark = 0;
-        prdt[1].msb_mark = 0;
-        prdt0_ph_addr = virtual2physical((v_addr_t)&prdt[0]);
-        prdt1_ph_addr = virtual2physical((v_addr_t)&prdt[1]);
-        bus_mastering_baseio = BAR4;
-        BITCLEAR(bus_mastering_baseio,0);
-        outportb(DMA_PRIMARY_COMMAND,0);
-        outportb(DMA_SECONDARY_COMMAND,0);
-        outportl(DMA_PRIMARY_PRDT,prdt0_ph_addr);
-        outportl(DMA_SECONDARY_PRDT,prdt1_ph_addr);
+        for (uint8_t channel = 0; channel < 2; channel++)
+        {
+            channels[channel].prdt.ph_addr = virtual2physical(VIRTUAL_DMA_ADDRESS + (channel * (PAGE_SIZE / 2)));
+            channels[channel].prdt_physical = virtual2physical((v_addr_t)&channels[channel].prdt);
+            channels[channel].prdt.trans_size = 0;
+            channels[channel].prdt.msb_mark = 0x8000;
+            outportb(channels[channel].bmide + DMA_COMMAND,0);
+        }
+        
+        // uint32_t dma_physical_address_channel1 = virtual2physical(VIRTUAL_DMA_ADDRESS);
+        // uint32_t dma_physical_address_channel2 = dma_physical_address_channel1 + (PAGE_SIZE / 2);
+        // prdt[0].ph_addr = dma_physical_address_channel1;
+        // prdt[1].ph_addr = dma_physical_address_channel2;
+        // prdt[0].trans_size = 0;
+        // prdt[1].trans_size = 0;
+        // prdt[0].msb_mark = 0;
+        // prdt[1].msb_mark = 0;
+        // channels[channel].prdt_physical = virtual2physical((v_addr_t)&prdt[channel]);
+        // prdt0_ph_addr = virtual2physical((v_addr_t)&prdt[0]);
+        // prdt1_ph_addr = virtual2physical((v_addr_t)&prdt[1]);
+        // bus_mastering_baseio = BAR4;
+        // BITCLEAR(bus_mastering_baseio,0);
+        // outportb(channels[channel].bmide + DMA_COMMAND,0);
+        // outportb(DMA_SECONDARY_COMMAND,0);
+        // outportl(DMA_PRIMARY_PRDT,prdt0_ph_addr);
+        // outportl(DMA_SECONDARY_PRDT,prdt1_ph_addr);
 
         //Enable IDE Bus Mastering
         uint32_t dev_command = _ide_device->common.command;
         dev_command |= (1<<2);
-        pci_writel(ide_device->bus,ide_device->device,ide_device->function,PCI_COMMAND,dev_command);
+        pci_writew(ide_device->bus,ide_device->device,ide_device->function,PCI_COMMAND,dev_command);
         is_dma_support = 1;
     }
     
 
     for (uint8_t i = 0; i < 4; i++)
-        {
-            if(devices[i].present == 1){
-                log_information("Found %s Drive %dKB - %s",
-                    (const char *[]){"ATA","ATAPI"}[devices[i].type],
-                    devices[i].size / 2,
-                    devices[i].model
-                );
-            }
+    {
+        if(devices[i].present == 1){
+            log_information("Found %s Drive %dKB - %s",
+                (const char *[]){"ATA","ATAPI"}[devices[i].type],
+                devices[i].size / 2,
+                devices[i].model
+            );
         }
+    }
     
     register_interrupt_handler(IRQ_BASE+IRQ14_HARD_DISK,irq_primary_handler);
     register_interrupt_handler(IRQ_BASE+IRQ15_RESERVED,irq_secondary_handler);

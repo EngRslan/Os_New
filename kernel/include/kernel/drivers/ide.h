@@ -127,12 +127,18 @@
 /*
     DMA Address
 */
-#define DMA_PRIMARY_COMMAND     0x00
-#define DMA_PRIMARY_STATUS      0x02
-#define DMA_PRIMARY_PRDT        0x04
-#define DMA_SECONDARY_COMMAND   0x08
-#define DMA_SECONDARY_STATUS    0x0A
-#define DMA_SECONDARY_PRDT      0x0C
+#define DMA_COMMAND     0x00
+#define DMA_STATUS      0x02
+#define DMA_PRDT        0x04
+
+
+struct ide_prdt_setup
+{
+    uint32_t ph_addr;
+    uint16_t trans_size;
+    uint16_t msb_mark;
+} __attribute__((packed));
+
 /**
  * @brief IDE Channel Configuration
  * 
@@ -141,7 +147,9 @@ struct ide_channel{
     uint16_t base;  // I/O BASE PORT
     uint16_t ctrl;  // CONTROL BASE PORT
     uint16_t bmide; // BUS MASTER IDE
-    uint8_t  nIEN;  // No Onterrupt
+    uint8_t  nIEN;  // No Interrupt
+    uint32_t prdt_physical;
+    struct ide_prdt_setup prdt;
 } ;
 
 struct ide_device
@@ -156,12 +164,7 @@ struct ide_device
     uint32_t size;           // Size in Sectors
     uint8_t  model[41];      // Model string
 } ;
-struct ide_prdt_setup
-{
-    uint32_t ph_addr;
-    uint16_t trans_size;
-    uint16_t msb_mark;
-} __attribute__((packed));
+
 /**
  * @brief Initial IDE CONTROLLER
  * 

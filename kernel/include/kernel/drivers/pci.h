@@ -148,4 +148,5 @@ void pci_install();
 pci_device_config_t * pci_get_device_config(uint8_t class,uint8_t subclass);
 pci_config_t * pci_get_device(uint8_t class,uint8_t subclass);
 void pci_writel(uint8_t bus,uint8_t device,uint8_t func, uint32_t offset, uint32_t value);
+void pci_writew(uint8_t bus,uint8_t device,uint8_t func, uint32_t offset, uint16_t value);
 #endif
