@@ -62,6 +62,16 @@ void allocate_region(page_directory_t * dir,v_addr_t virtual_address,uint32_t to
     }
     
 }
+void callocate_region(page_directory_t * dir,v_addr_t virtual_address,uint32_t total_pages,uint32_t is_user,uint32_t is_writable){
+    void * ph_block = callocate_blocks(total_pages);
+    for (uint32_t i = 0; i < total_pages; i++)
+    {
+        map_page(dir,virtual_address,(p_frame_t)ph_block,is_user,is_writable);
+        ph_block += BLOCK_SIZE;
+        virtual_address += PAGE_SIZE;
+    }
+    
+}
 void map_dir_entry(page_table_directory_t * pde,p_frame_t frame,uint32_t is_user,uint32_t is_writable){
     pde->present = 1;
     pde->rw = is_writable;
@@ -142,8 +152,8 @@ void vmm_install(){
     memset(kernel_tables_map,0,sizeof(page_table_t));
     
     // Map page tables space MAP ALL TABLES PAGES TO USE IT AGAIN
-    map_page(default_dir,(v_addr_t)GET_VIRTUAL_ADDRESS(0x300,0x3FF),(p_frame_t)kernel_tables_map,0,1);
-    page_table_directory_t * dir400 = &default_dir->tables[0x301];
+    map_page(default_dir,(v_addr_t)GET_VIRTUAL_ADDRESS(KERNEL_DIR_INDX,KERNEL_DIR_TABLES_TABLE_INDX),(p_frame_t)kernel_tables_map,0,1);
+    page_table_directory_t * dir400 = &default_dir->tables[KERNEL_TABLES_MAP_DIR_INDX];
     dir400->present = 1,
     dir400->user = 0;
     dir400->rw = 1;
@@ -151,7 +161,7 @@ void vmm_install(){
 
 
     //Map defualt directory
-    map_page(default_dir,(v_addr_t)GET_VIRTUAL_ADDRESS(0x300,0x3FE),(p_frame_t)default_dir,0,1);
+    map_page(default_dir,(v_addr_t)GET_VIRTUAL_ADDRESS(KERNEL_DIR_INDX,KERNEL_DEFAULT_DIR_TABLE_INDX),(p_frame_t)default_dir,0,1);
     
     //MAP DEFAULT VGA ADDRESS IDENTITY
     map_region(default_dir,0xb8000,0xb8000,8,0,1);
@@ -167,8 +177,8 @@ void vmm_install(){
 
     //map_region(default_dir,(v_addr_t)&_physical_memory_free_address,(p_frame_t)&_physical_memory_free_address,1024,0,1);
     switch_directory(default_dir);
-    kernel_directory = (page_directory_t *)GET_VIRTUAL_ADDRESS(0x300,0x3FE);
-    kernel_tables_map = (page_table_t *)GET_VIRTUAL_ADDRESS(0x300,0x3FF);
+    kernel_directory = (page_directory_t *)GET_VIRTUAL_ADDRESS(KERNEL_DIR_INDX,KERNEL_DEFAULT_DIR_TABLE_INDX);
+    kernel_tables_map = (page_table_t *)GET_VIRTUAL_ADDRESS(KERNEL_DIR_INDX,KERNEL_DIR_TABLES_TABLE_INDX);
     is_pagging_done = 1;
 }
 

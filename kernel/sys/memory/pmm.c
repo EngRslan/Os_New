@@ -63,5 +63,46 @@ void mark_reserved_region(void * address,uint32_t len){
 }
 
 void free_block(void * ptr){
-    CLEARBIT((uint32_t)GET_BLOCK_NUMBER((uint32_t)ptr));
+    uint32_t clear_block = (uint32_t)GET_BLOCK_NUMBER((uint32_t)ptr);
+    CLEARBIT(clear_block);
+}
+
+void free_blocks(void * ptr,uint32_t blocks_count)
+{
+    uint32_t clear_block = (uint32_t)GET_BLOCK_NUMBER((uint32_t)ptr);
+    for (uint32_t i = 0; i < blocks_count; i++)
+    {
+        CLEARBIT(clear_block);
+        clear_block++;
+    }
+    
+}
+
+void * callocate_blocks(uint32_t count){
+
+    uint32_t i = 0;
+    uint32_t start_of_block = 0;
+
+    for (i = 0; i < total_blocks; i++)
+    {
+        if(start_of_block == 0 && !ISSET(i))
+        {
+            start_of_block = i;
+        }
+        else if(start_of_block != 0 && !ISSET(i)){
+            if((i - start_of_block)+1==count){
+                for (uint32_t j = 0; j < count; j++)
+                {
+                    uint32_t bit_to_set = start_of_block+j;
+                    SETBIT(bit_to_set);
+                }
+                return (void *)(start_of_block*BLOCK_SIZE); 
+            }
+        }
+        else
+        {
+            start_of_block = 0;
+        }
+    }
+    return NULL;
 }

@@ -17,4 +17,6 @@
     void pmm_install(multiboot_memory_map_t * address,unsigned int length);
     void * allocate_block();
     void free_block(void * ptr);
+    void free_blocks(void * ptr,uint32_t blocks_count);
+    void * callocate_blocks(uint32_t count);
 #endif

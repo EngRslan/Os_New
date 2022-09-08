@@ -4,7 +4,7 @@
 #include <kernel/mem/kheap.h>
 #include <kernel/mem/vmm.h>
 
-kheap_block_header_t * kheap_address =  (kheap_block_header_t *)GET_VIRTUAL_ADDRESS(0x302,0x0);
+kheap_block_header_t * kheap_address =  (kheap_block_header_t *)GET_VIRTUAL_ADDRESS(KERNEL_HEAP_DIR_INDX,0x0);
 unsigned int total_allocated_pages = 0;
 ptr_t allocate_additional_page();
 

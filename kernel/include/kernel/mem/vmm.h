@@ -1,11 +1,12 @@
 #ifndef VMEM_H
 #define VMEM_H
 #include "../types.h"
+#include <kernel/sys/kernel_address.h>
 #define PAGE_SIZE 0x1000
 #define DIR_INDEX(vaddr)((v_addr_t)vaddr >> 22)
 #define PAGE_INDEX(vaddr)(((v_addr_t)vaddr >> 12)&0x3FF)
 #define GET_VIRTUAL_ADDRESS(pde,pte)((pde << 22)|(pte << 12)|0)
-#define GET_VIRTUAL_TABLE_ADDRESS(pdi)(GET_VIRTUAL_ADDRESS(0x301,pdi))
+#define GET_VIRTUAL_TABLE_ADDRESS(pdi)(GET_VIRTUAL_ADDRESS(KERNEL_TABLES_MAP_DIR_INDX,pdi))
 
 typedef uint32_t p_frame_t;
 typedef uint32_t v_addr_t;
@@ -53,6 +54,7 @@ void vmm_install();
 void allocate_page(page_directory_t * dir,v_addr_t virtual_address,uint32_t is_user,uint32_t is_writable);
 void kallocate_page(v_addr_t virtual_address);
 void allocate_region(page_directory_t * dir,v_addr_t virtual_address,uint32_t total_pages,uint32_t is_user,uint32_t is_writable);
+void callocate_region(page_directory_t * dir,v_addr_t virtual_address,uint32_t total_pages,uint32_t is_user,uint32_t is_writable);
 void free_page(page_directory_t * dir,v_addr_t virtual_address);
 uint32_t virtual2physical(v_addr_t addr);
 #endif
