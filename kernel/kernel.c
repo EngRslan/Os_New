@@ -25,6 +25,8 @@
 #include <logger.h>
 #include <stdio.h>
 #include <string.h>
+#include <kernel/net/arp.h>
+#include <kernel/net/addr.h>
 
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -124,18 +126,23 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   pci_config_t * eth_controller = pci_get_device(0x2,0x0);
   rtl8139_install(eth_controller);
   log_information("Installing Network Controller Successfully");
-  void * asd1 = allocate_block(1);
-  void * asd2 = allocate_block(1);
-  void * asd3 = allocate_block(1);
-  void * asd4 = allocate_block(1);
-  void * asd5 = callocate_blocks(3);
-  void * asdss = allocate_block(1);
 
-  // free_block(asd1);
-  free_block(asd2);
-  free_block(asd3);
-  free_block(asd4);
-  void * asd6 = callocate_blocks(3);
+  eth_addr_t eth_zero = {.n={0,0,0,0,0,0}};
+  ipv4_addr_t ipv4_zero = {.n={192,168,76,2}};
+  arp_send_packet(&eth_zero,&ipv4_zero);
+  //uint32_t ss = SWITCH_ENDIAN16(0xdd86);
+  // void * asd1 = allocate_block(1);
+  // void * asd2 = allocate_block(1);
+  // void * asd3 = allocate_block(1);
+  // void * asd4 = allocate_block(1);
+  // void * asd5 = callocate_blocks(3);
+  // void * asdss = allocate_block(1);
+
+  // // free_block(asd1);
+  // free_block(asd2);
+  // free_block(asd3);
+  // free_block(asd4);
+  // void * asd6 = callocate_blocks(3);
 
   // ptr_t kmm = kmalloc(600);
   // memset(kmm,0xDD,0x200);

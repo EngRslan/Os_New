@@ -4,15 +4,32 @@
 #include <kernel/system.h>
 #include <kernel/bits.h>
 #include <kernel/mem/vmm.h>
+#include <kernel/mem/kheap.h>
 #include <kernel/isr.h>
 #include <logger.h>
 #include <stddef.h>
 #include <string.h>
 #include <kernel/system.h>
+#include <kernel/net/ethernet.h>
 
 #define ETH_BUFFER_ADDRESS GET_VIRTUAL_ADDRESS(0x302,0)
+/*Virtual Buffer Address*/
+ptr_t const rx_buffer   = (ptr_t)ETH_BUFFER_ADDRESS;
+ptr_t const tx_buffer1  = (ptr_t)(rx_buffer + 8192 + 16 + 1500);
+ptr_t const tx_buffer2  = (ptr_t)(tx_buffer1 + 645) ;
+ptr_t const tx_buffer3  = (ptr_t)(tx_buffer2 + 645) ;
+ptr_t const tx_buffer4  = (ptr_t)(tx_buffer3 + 645) ;
+uint32_t rx_offset = 0;
 
-ptr_t rx_buffer = (ptr_t *)ETH_BUFFER_ADDRESS;
+uint32_t ts_array[4][3]={
+    {0x20,0x10,(uint32_t)tx_buffer1},
+    {0x24,0x14,(uint32_t)tx_buffer2},
+    {0x28,0x18,(uint32_t)tx_buffer3},
+    {0x2C,0x1C,(uint32_t)tx_buffer4},
+};
+
+uint8_t current_tx = 0;
+
 uint32_t io_addr = 0;
 uint8_t get_hwverid(uint32_t io_addr,string_t * s){
     uint32_t hwverid = ((inportl(io_addr + 0x40))&0x7E000000)>>25;
@@ -45,7 +62,7 @@ uint8_t get_hwverid(uint32_t io_addr,string_t * s){
     }
     return hwverid;
 }
-void read_mac_addr(uint32_t io_addr,uint8_t mac_addr[]){
+void read_mac_addr(uint8_t mac_addr[]){
     mac_addr[0] = inportb(io_addr + 0);
     mac_addr[1] = inportb(io_addr + 1);
     mac_addr[2] = inportb(io_addr + 2);
@@ -57,7 +74,64 @@ void reset_device(uint32_t io_addr){
     outportb(io_addr+0x37,0x10);
     while (BITREAD(inportb(io_addr+0x37),4) != 0) { }
 }
+void rtl8139_send_packet(ptr_t data,uint32_t len){
+    if(len > 645){
+        log_warning("packet size %d exceeded buffer size 645 packet trancated",len);
+        len = 645;
+    }
+    void * tx_buffer = (void *)ts_array[current_tx][2];
+    memcpy(tx_buffer,(void *)data,len);
 
+    outportl(io_addr + ts_array[current_tx][0],virtual2physical((v_addr_t)ts_array[current_tx][2]));
+    outportl(io_addr + ts_array[current_tx][1],len);
+    
+    if(++current_tx>3)
+        current_tx = 0;
+    
+    
+}
+uint8_t rx_packet_valid(struct packet_header * packet){
+    uint8_t isbad = packet->runt || packet->lng || packet->crc || packet->fae;
+    return !isbad && packet->rok;
+}
+void packet_recieved_handler(){
+    /*
+        Ethernet Packet
+        2byte packet header
+        2byte packet length
+    */
+   uint8_t cmd;
+   while (1)
+   {
+        cmd = inportb(io_addr + 0x37);
+        if(BITREAD(cmd,0)) // first bit Buffer empty
+        {
+            break;
+        }
+
+        do
+        {
+            struct packet_header * pct = (struct packet_header *)(rx_buffer + rx_offset) ;
+            if(rx_packet_valid(pct)){
+                ptr_t * packet_data = kmalloc(pct->data_size);
+                memcpy(packet_data,(void *)pct+sizeof(struct packet_header),pct->data_size);
+
+                ethernet_handle_packet((struct ether_header *)packet_data,pct->data_size);
+                kfree(packet_data);
+                rx_offset = (rx_offset+pct->data_size+4+3)&(~0x3);
+
+                if(rx_offset > 0x2000){
+                    rx_offset -= 0x2000;
+                }
+                uint32_t ss = rx_offset - 0x10;
+                outports(io_addr+0x38,rx_offset-0x10);
+            }else{
+                break;
+            }
+            cmd = inportb(io_addr + 0x37);
+        } while (!BITREAD(cmd,0));
+   }
+}
 void eth_irq_handler(register_t * reg){
     uint16_t status = inports(io_addr + 0x3e);
 
@@ -67,10 +141,12 @@ void eth_irq_handler(register_t * reg){
 
     if(status & (1<<0)){
         log_trace("eth: IRQ Fired (Packet Received)");
+        packet_recieved_handler();
     }
 
     outports(io_addr + 0x3E,0x5);
 }
+
 void rtl8139_install(pci_config_t * _device){
     pci_device_config_t * dev = (pci_device_config_t *)_device->config;
     io_addr = dev->BAR0;
@@ -80,7 +156,7 @@ void rtl8139_install(pci_config_t * _device){
     reset_device(io_addr);
 
     uint8_t mac_addr[6];
-    read_mac_addr(io_addr,mac_addr);
+    read_mac_addr(mac_addr);
 
     string_t hwvers = NULL;
     uint32_t hwverid = get_hwverid(io_addr,&hwvers);

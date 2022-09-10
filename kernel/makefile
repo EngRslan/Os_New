@@ -12,10 +12,12 @@ MEM_DIR=./sys/memory
 DRIVERS_DIR=./drivers
 DATA_STRUCT_DIR=./datastruct
 FS=./filesystems
+NET=./net
 
 CSRC= kernel.c \
 	$(GDT_DIR)/gdt.c $(IDT_DIR)/syscalls.c $(IDT_DIR)/idt.c $(IRQ_DIR)/irq.c $(DRIVERS_DIR)/pic.c $(SYS_DIR)/port_io.c \
 	$(MEM_DIR)/kheap.c $(MEM_DIR)/vmm.c $(MEM_DIR)/pmm.c \
+	$(NET)/ethernet.c $(NET)/arp.c \
 	$(DRIVERS_DIR)/rtc.c $(DRIVERS_DIR)/vga.c $(DRIVERS_DIR)/keyboard.c  $(DRIVERS_DIR)/serial.c $(DRIVERS_DIR)/pit.c $(DRIVERS_DIR)/pci.c $(DRIVERS_DIR)/ide.c $(DRIVERS_DIR)/rtl8139.c\
 	logging/logger.c \
 	$(FS)/vfs.c $(FS)/iso9660.c\
