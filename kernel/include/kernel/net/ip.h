@@ -1,6 +1,7 @@
 #ifndef IP_H
 #define IP_H
 #include <kernel/types.h>
+#include <kernel/net/addr.h>
 
 typedef struct ipv4_header
 {
@@ -32,6 +33,7 @@ typedef struct ipv4_header
     uint8_t src_ip[4];
     uint8_t dst_ip[4];
     
-}__attribute__((packed)) ipv4_header_t;
-void ip_send_packet(ipv4_addr_t * dst_ip, ptr_t * data,uint32_t len);
+} __attribute__((packed)) ipv4_header_t;
+
+void ip_send_packet(ipv4_addr_t * dst_ip, ptr_t data,uint32_t len);
 #endif

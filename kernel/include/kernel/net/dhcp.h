@@ -19,5 +19,5 @@ typedef struct dhcp_header {
     uint8_t file[128];
 } __attribute__((packed)) dhcp_header_t;
 
-
+void dhcp_discover();
 #endif

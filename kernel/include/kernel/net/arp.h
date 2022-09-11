@@ -2,7 +2,11 @@
 #define ARP_H
 #include <kernel/types.h>
 #include <kernel/net/addr.h>
-
+struct arp_entry{
+    uint8_t present;
+    ipv4_addr_t ip;
+    eth_addr_t mac;
+};
 typedef struct arp_header
 {
     uint16_t hw_type;

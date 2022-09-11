@@ -8,11 +8,9 @@
 #include <kernel/net/ethernet.h>
 #include <kernel/net/addr.h>
 
-static struct arp_entry{
-    uint8_t present;
-    ipv4_addr_t ip;
-    eth_addr_t mac
-} arp_table[10];
+static struct arp_entry arp_table[10]={
+    {.present=1,.ip.bits=0xFFFFFFFF,.mac.n={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF}}
+};
 eth_addr_t broadcast_mac_address = {.n={0,0,0,0,0,0}};
 
 void arp_send_packet(eth_addr_t * dst_hw_addr,ipv4_addr_t * dst_protocol_addr){
@@ -43,7 +41,7 @@ struct arp_entry *arp_lookup(ipv4_addr_t * ip){
     uint32_t uip = ip->bits;
     for (uint8_t i = 0; i < 10; i++)
     {
-        if(arp_table[i].ip.bits == uip & arp_table[i].present){
+        if(arp_table[i].ip.bits == uip && arp_table[i].present){
             return &arp_table[i];
         }
     }
@@ -54,7 +52,7 @@ struct arp_entry *arp_lookup(ipv4_addr_t * ip){
     {
         for (uint8_t i = 0; i < 10; i++)
         {
-            if(arp_table[i].ip.bits == uip & arp_table[i].present){
+            if(arp_table[i].ip.bits == uip && arp_table[i].present){
                 return &arp_table[i];
             }
         }
@@ -81,6 +79,7 @@ struct arp_entry * arp_table_add(eth_addr_t * dst_hw_addr,ipv4_addr_t * dst_prot
             }
         }
     }
+    return NULL;
 }
 void arp_handle_packet(arp_header_t * packet,uint32_t len)
 {
