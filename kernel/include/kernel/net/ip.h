@@ -17,15 +17,15 @@ typedef struct ipv4_header
     uint16_t id;
     union 
     {
-        uint16_t flags_fragment;
+        uint8_t flags_fragment;
         struct
         {
             uint8_t flags:3;
             uint8_t fragment_offset_high:5;
-            uint8_t fragment_offset_low;
         };
         
     };
+    uint8_t fragment_offset_low;
     uint8_t ttl;
     uint8_t protocol;
     uint16_t checksum;
@@ -33,5 +33,5 @@ typedef struct ipv4_header
     uint8_t dst_ip[4];
     
 }__attribute__((packed)) ipv4_header_t;
-
+void ip_send_packet(ipv4_addr_t * dst_ip, ptr_t * data,uint32_t len);
 #endif

@@ -18,4 +18,7 @@ typedef struct
 }__attribute__((packed)) eth_addr_t;
 
 
+void ip2str(string_t str,ipv4_addr_t * ip);
+void mac2str(string_t str,eth_addr_t * mac);
+
 #endif

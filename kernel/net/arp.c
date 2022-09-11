@@ -6,6 +6,14 @@
 #include <kernel/bits.h>
 #include <kernel/types.h>
 #include <kernel/net/ethernet.h>
+#include <kernel/net/addr.h>
+
+static struct arp_entry{
+    uint8_t present;
+    ipv4_addr_t ip;
+    eth_addr_t mac
+} arp_table[10];
+eth_addr_t broadcast_mac_address = {.n={0,0,0,0,0,0}};
 
 void arp_send_packet(eth_addr_t * dst_hw_addr,ipv4_addr_t * dst_protocol_addr){
     arp_header_t * arp_pack = kmalloc(sizeof(arp_header_t));
@@ -31,8 +39,56 @@ void arp_send_packet(eth_addr_t * dst_hw_addr,ipv4_addr_t * dst_protocol_addr){
     ethernet_send_packet(brdcast,(ptr_t)arp_pack,sizeof(arp_header_t),0x0806);
 }
 
+struct arp_entry *arp_lookup(ipv4_addr_t * ip){
+    uint32_t uip = ip->bits;
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        if(arp_table[i].ip.bits == uip & arp_table[i].present){
+            return &arp_table[i];
+        }
+    }
 
+    arp_send_packet(&broadcast_mac_address,ip);
+    
+    while (1)
+    {
+        for (uint8_t i = 0; i < 10; i++)
+        {
+            if(arp_table[i].ip.bits == uip & arp_table[i].present){
+                return &arp_table[i];
+            }
+        }
+    }
+    
+
+    return NULL;
+    
+}
+struct arp_entry * arp_table_add(eth_addr_t * dst_hw_addr,ipv4_addr_t * dst_protocol_addr){
+    struct arp_entry *arp_entry;
+    if((arp_entry = arp_lookup(dst_protocol_addr))){
+        memcpy(arp_entry->mac.n,dst_hw_addr->n,6);
+        return arp_entry;
+    }else{
+        for (uint8_t i = 0;i < 10;i++)
+        {
+            arp_entry = &arp_table[i];
+            if(!arp_entry->present){
+                arp_entry->present = 1;
+                arp_entry->ip.bits = dst_protocol_addr->bits;
+                memcpy(&arp_entry->mac,dst_hw_addr,6);
+                return arp_entry;
+            }
+        }
+    }
+}
 void arp_handle_packet(arp_header_t * packet,uint32_t len)
 {
+    if(SWITCH_ENDIAN16(packet->opcode) == 1){
+        //Request
+    }else if(SWITCH_ENDIAN16(packet->opcode) == 2){
+        //replay
+        arp_table_add(&packet->src_hw_addr,&packet->src_protocol_addr);
+    }
 
 }

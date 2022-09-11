@@ -127,9 +127,12 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   rtl8139_install(eth_controller);
   log_information("Installing Network Controller Successfully");
 
-  eth_addr_t eth_zero = {.n={0,0,0,0,0,0}};
-  ipv4_addr_t ipv4_zero = {.n={192,168,76,2}};
-  arp_send_packet(&eth_zero,&ipv4_zero);
+  // uint8_t e = 0b00001111;
+  // __asm__ __volatile__ ("rorb $4,%0":"=r"(e):"r"(e));
+  // e=SWITCH_BITS(e,4);
+  // eth_addr_t eth_zero = {.n={0,0,0,0,0,0}};
+  // ipv4_addr_t ipv4_zero = {.n={192,168,76,2}};
+  // arp_send_packet(&eth_zero,&ipv4_zero);
   //uint32_t ss = SWITCH_ENDIAN16(0xdd86);
   // void * asd1 = allocate_block(1);
   // void * asd2 = allocate_block(1);

@@ -1,5 +1,6 @@
 #include <kernel/net/ethernet.h>
 #include <kernel/net/arp.h>
+#include <kernel/net/addr.h>
 #include <kernel/bits.h>
 #include <kernel/mem/kheap.h>
 #include <kernel/drivers/rtl8139.h>
@@ -9,10 +10,12 @@
 void ethernet_handle_packet(struct ether_header * packet,int len){
     ptr_t data = (ptr_t) packet + sizeof(struct ether_header);
     uint32_t datalen = len-sizeof(struct ether_header);
-    log_trace("eth: new packet type 0x%x from address: %x:%x:%x:%x:%x:%x to address: %x:%x:%x:%x:%x:%x:" ,(uint32_t)SWITCH_ENDIAN16(packet->type),(uint32_t)packet->ether_shost[0],
-        (uint32_t)packet->ether_shost[1],(uint32_t)packet->ether_shost[2],(uint32_t)packet->ether_shost[3],(uint32_t)packet->ether_shost[4],(uint32_t)packet->ether_shost[5],
-        (uint32_t)packet->ether_dhost[0],(uint32_t)packet->ether_dhost[1],(uint32_t)packet->ether_dhost[2],(uint32_t)packet->ether_dhost[3],(uint32_t)packet->ether_dhost[4],(uint32_t)packet->ether_dhost[5]
-        );
+
+    char from_address_str[(3*6)+1];
+    mac2str(from_address_str,(eth_addr_t *)packet->ether_shost);
+    char to_address_str[(3*6)+1];
+    mac2str(to_address_str,(eth_addr_t *)packet->ether_dhost);
+    log_trace("eth: new packet type 0x%x from address: %s to address: %s" ,(uint32_t)SWITCH_ENDIAN16(packet->type),from_address_str,to_address_str);
 
     switch (SWITCH_ENDIAN16(packet->type))
     {
@@ -21,6 +24,7 @@ void ethernet_handle_packet(struct ether_header * packet,int len){
         arp_handle_packet((arp_header_t *) data,datalen);
         break;
     case  ETHERTYPE_IP:
+    
         break;
     case  ETHERTYPE_IPV6:
         log_warning("eth: Protocol IPv6 Unsuported");

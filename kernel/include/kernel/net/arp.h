@@ -18,4 +18,6 @@ typedef struct arp_header
 
 void arp_send_packet(eth_addr_t * dst_hw_addr,ipv4_addr_t * dst_protocol_addr);
 void arp_handle_packet(arp_header_t * packet,uint32_t len);
+struct arp_entry *arp_lookup(ipv4_addr_t * ip);
+
 #endif
