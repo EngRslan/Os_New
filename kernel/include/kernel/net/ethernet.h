@@ -22,6 +22,29 @@ struct ether_header{
 } __attribute__ ((__packed__));
 
 
+typedef uint8_t MacAddress[6];
+
+struct ether_header{
+    uint8_t ether_dhost[6];
+    uint8_t ether_shost[6];
+    uint16_t type;
+} __attribute__ ((__packed__));
+
+
+typedef struct {
+    MacAddress macAddress;
+    Send send;
+    char name[50];
+} NetInterface;
+typedef struct
+{
+    void    *packetData;
+    uint32_t length;
+    NetInterface *interface;
+} NetBuffer;
+typedef void(*Send)(NetBuffer *);
+
+// void EthernetSendPacket(NetBuffer * packet_buffer);
 void ethernet_handle_packet(struct ether_header * packet,int len);
 void ethernet_send_packet(uint8_t ether_dhost[6],ptr_t data,uint32_t len,uint32_t protocol);
 #endif

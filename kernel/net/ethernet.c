@@ -24,7 +24,7 @@ void ethernet_handle_packet(struct ether_header * packet,int len){
         arp_handle_packet((arp_header_t *) data,datalen);
         break;
     case  ETHERTYPE_IP:
-    
+        log_information("eth: Ip packet type arrived 0x%x",(uint32_t)SWITCH_ENDIAN16(packet->type));
         break;
     case  ETHERTYPE_IPV6:
         log_warning("eth: Protocol IPv6 Unsuported");
@@ -45,3 +45,8 @@ void ethernet_send_packet(uint8_t ether_dhost[6],ptr_t data,uint32_t len,uint32_
     rtl8139_send_packet((ptr_t)packet,sizeof(struct ether_header) + len);
     kfree(packet);
 }
+
+
+// void EthernetSendPacket(NetBuffer * packet_buffer){
+//     packet_buffer->Interface.
+// }
