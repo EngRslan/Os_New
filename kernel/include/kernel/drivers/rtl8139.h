@@ -2,6 +2,8 @@
 #define RTL8139
 #include <kernel/drivers/pci.h>
 #include <kernel/types.h>
+#include <kernel/net/intf.h>
+
 struct packet_header
 {
     union
@@ -34,7 +36,7 @@ struct packet_header
     uint16_t data_size;
 } __attribute__((packed));
 
-void rtl8139_install(pci_config_t * _device);
+void rtl8139_install(NetInterface *netIf, pci_config_t * _device);
 void read_mac_addr(uint8_t mac_addr[]);
 void rtl8139_send_packet(ptr_t data,uint32_t len);
 

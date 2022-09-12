@@ -1,7 +1,10 @@
 #ifndef ADDR_H
 #define ADDR_H
 #include <kernel/types.h>
+#include <stdbool.h>
 
+typedef uint8_t MacAddress[6];
+extern MacAddress g__broadcastMacAddress;
 typedef struct
 {
     union
@@ -20,5 +23,7 @@ typedef struct
 
 void ip2str(string_t str,ipv4_addr_t * ip);
 void mac2str(string_t str,eth_addr_t * mac);
-
+void CopyMacAddress(MacAddress * src, MacAddress * dst);
+bool IsMacAddressEquals(MacAddress * left, MacAddress * right);
+void MacToStr(char *str,MacAddress mac);
 #endif

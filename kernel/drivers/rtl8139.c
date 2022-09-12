@@ -11,8 +11,11 @@
 #include <string.h>
 #include <kernel/system.h>
 #include <kernel/net/ethernet.h>
+#include <kernel/net/intf.h>
 
 #define ETH_BUFFER_ADDRESS GET_VIRTUAL_ADDRESS(0x302,0)
+
+NetInterface *_netIf;
 /*Virtual Buffer Address*/
 ptr_t const rx_buffer   = (ptr_t)ETH_BUFFER_ADDRESS;
 ptr_t const tx_buffer1  = (ptr_t)(rx_buffer + 8192 + 16 + 1500);
@@ -113,11 +116,15 @@ void packet_recieved_handler(){
         {
             struct packet_header * pct = (struct packet_header *)(rx_buffer + rx_offset) ;
             if(rx_packet_valid(pct)){
-                ptr_t * packet_data = kmalloc(pct->data_size);
-                memcpy(packet_data,(void *)pct+sizeof(struct packet_header),pct->data_size);
-
-                ethernet_handle_packet((struct ether_header *)packet_data,pct->data_size);
-                kfree(packet_data);
+                NetBuffer *packet_buffer = (NetBuffer *)kmalloc(sizeof(NetBuffer));
+                packet_buffer->packetData = kmalloc(pct->data_size);
+                packet_buffer->interface = _netIf;
+                packet_buffer->length = pct->data_size;
+                memcpy(packet_buffer->packetData,(void *)pct+sizeof(struct packet_header),packet_buffer->length);
+                // ethernet_handle_packet((struct ether_header *)packet_data,pct->data_size);
+                EthernetReceive(packet_buffer);
+                kfree(packet_buffer->packetData);
+                kfree(packet_buffer);
                 rx_offset = (rx_offset+pct->data_size+4+3)&(~0x3);
 
                 if(rx_offset > 0x2000){
@@ -146,8 +153,10 @@ void eth_irq_handler(register_t * reg){
 
     outports(io_addr + 0x3E,0x5);
 }
-
-void rtl8139_install(pci_config_t * _device){
+void rtl8139Send(NetBuffer *packet_buffer){
+    rtl8139_send_packet(packet_buffer->packetData,packet_buffer->length);
+}
+void rtl8139_install(NetInterface *netIf, pci_config_t * _device){
     pci_device_config_t * dev = (pci_device_config_t *)_device->config;
     io_addr = dev->BAR0;
     io_addr = io_addr & (~0x3);
@@ -155,13 +164,16 @@ void rtl8139_install(pci_config_t * _device){
     outportb(io_addr+0x52,0);
     reset_device(io_addr);
 
-    uint8_t mac_addr[6];
-    read_mac_addr(mac_addr);
+    // uint8_t mac_addr[6];
 
     string_t hwvers = NULL;
     uint32_t hwverid = get_hwverid(io_addr,&hwvers);
-    
-    log_trace("eth: %s Detected MAC:%01x:%01x:%01x:%01x:%01x:%01x",hwvers,(uint32_t)mac_addr[0],(uint32_t)mac_addr[1],(uint32_t)mac_addr[2],(uint32_t)mac_addr[3],(uint32_t)mac_addr[4],(uint32_t)mac_addr[5]);
+    memcpy(&netIf->name,hwvers,strlen(hwvers));
+
+    char mac_str[19];
+    read_mac_addr(&netIf->macAddress);
+    MacToStr(mac_str,&netIf->macAddress);
+    log_trace("[rtl8139]: %s Detected MAC:%s",hwvers,mac_str);
 
     callocate_region(kernel_directory,(v_addr_t)rx_buffer,3,0,1);
     memset((void *)rx_buffer,0,3*PAGE_SIZE);
@@ -179,6 +191,5 @@ void rtl8139_install(pci_config_t * _device){
 
     uint8_t irq = 32 + dev->interrupt_line;
     register_interrupt_handler(irq,eth_irq_handler);
-
-
+    netIf->send = rtl8139Send;
 }
