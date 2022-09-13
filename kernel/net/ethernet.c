@@ -4,7 +4,6 @@
 #include <kernel/net/intf.h>
 #include <kernel/bits.h>
 #include <kernel/mem/kheap.h>
-#include <kernel/drivers/rtl8139.h>
 #include <logger.h>
 #include <string.h>
 

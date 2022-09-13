@@ -2,26 +2,34 @@
 #define ARP_H
 #include <kernel/types.h>
 #include <kernel/net/addr.h>
-struct arp_entry{
-    uint8_t present;
-    ipv4_addr_t ip;
-    eth_addr_t mac;
-};
-typedef struct arp_header
-{
-    uint16_t hw_type;
-    uint16_t protocol;
-    uint8_t hw_addr_len;
-    uint8_t protocol_addr_len;
-    uint16_t opcode;
-    eth_addr_t src_hw_addr;
-    ipv4_addr_t src_protocol_addr;
-    eth_addr_t dst_hw_addr;
-    ipv4_addr_t dst_protocol_addr;
-} __attribute__((packed)) arp_header_t;
+#include <stdbool.h>
 
-void arp_send_packet(eth_addr_t * dst_hw_addr,ipv4_addr_t * dst_protocol_addr);
-void arp_handle_packet(arp_header_t * packet,uint32_t len);
-struct arp_entry *arp_lookup(ipv4_addr_t * ip);
+typedef enum {
+    Request = 1,
+    Replay = 2
+} ArpOpCode;
+
+typedef struct{
+    bool isPresent;
+    Ipv4Address ip;
+    MacAddress mac;
+} ArpEntry;
+
+typedef struct
+{
+    uint16_t hwType;
+    uint16_t protocol;
+    uint8_t MacAddressLen;
+    uint8_t IpAddrLen;
+    uint16_t opCode;
+    MacAddress srcMacAddr;
+    Ipv4Address srcIpAddr;
+    MacAddress dstMacAddr;
+    Ipv4Address dstIpAddr;
+} __attribute__((packed)) ArpHeader;
+
+void arpSend(MacAddress *dstMacAddr,Ipv4Address *dstIpAddr,ArpOpCode opCode);
+void arpReceive(NetBuffer *packet_buffer);
+ArpEntry *arp_lookup(Ipv4Address *ip);
 
 #endif

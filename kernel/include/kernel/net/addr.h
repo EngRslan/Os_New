@@ -4,7 +4,25 @@
 #include <stdbool.h>
 
 typedef uint8_t MacAddress[6];
+typedef uint8_t Ipv4Address[4];
+
 extern MacAddress g__broadcastMacAddress;
+extern MacAddress g__broadcastIpAddress;
+
+typedef enum {
+    None = 0,
+    Static = 1,
+    Dhcp = 2,
+} IpAssignMethod;
+
+struct AssignedIpAddress {
+    IpAssignMethod assignMethod;
+    Ipv4Address Ip;
+    uint8_t subnet;
+    Ipv4Address gateway;
+};
+
+extern struct AssignedIpAddress defaultAssignedIpAddress;
 typedef struct
 {
     union
@@ -26,4 +44,8 @@ void mac2str(string_t str,eth_addr_t * mac);
 void CopyMacAddress(MacAddress * src, MacAddress * dst);
 bool IsMacAddressEquals(MacAddress * left, MacAddress * right);
 void MacToStr(char *str,MacAddress mac);
+void Ipv4ToStr(char *str,Ipv4Address ip);
+bool IsIpv4AddressEquals(Ipv4Address * left, Ipv4Address * right);
+void CopyIpv4Address(Ipv4Address *src, Ipv4Address *dst);
+
 #endif
