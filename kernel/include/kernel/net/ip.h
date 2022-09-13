@@ -2,8 +2,9 @@
 #define IP_H
 #include <kernel/types.h>
 #include <kernel/net/addr.h>
+#include <kernel/net/intf.h>
 
-typedef struct ipv4_header
+typedef struct
 {
     union {
         uint8_t ver_ihl;
@@ -30,10 +31,10 @@ typedef struct ipv4_header
     uint8_t ttl;
     uint8_t protocol;
     uint16_t checksum;
-    uint8_t src_ip[4];
-    uint8_t dst_ip[4];
+    Ipv4Address src_ip;
+    Ipv4Address dst_ip;
     
-} __attribute__((packed)) ipv4_header_t;
+} __attribute__((packed)) Ipv4Header;
 
-void ip_send_packet(ipv4_addr_t * dst_ip, ptr_t data,uint32_t len);
+void IpSend(NetBuffer *netbuffer, Ipv4Address ip);
 #endif

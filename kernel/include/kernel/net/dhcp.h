@@ -1,8 +1,9 @@
 #ifndef DHCP_H
 #define DHCP_H
 #include <kernel/types.h>
+#include <kernel/net/intf.h>
 
-typedef struct dhcp_header {
+typedef struct {
     uint8_t op;
     uint8_t hw_type;
     uint8_t hw_addr_len;
@@ -17,7 +18,7 @@ typedef struct dhcp_header {
     uint8_t client_hw_addrp[16];
     uint8_t server_name[64];
     uint8_t file[128];
-} __attribute__((packed)) dhcp_header_t;
+} __attribute__((packed)) DhcpHeader;
 
-void dhcp_discover();
+void DhcpDiscover(NetInterface *intf);
 #endif

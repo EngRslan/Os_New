@@ -125,10 +125,11 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
 
   log_information("Installing Network Controller");
   pci_config_t * eth_controller = pci_get_device(0x2,0x0);
-  rtl8139_install(eth_controller);
+  NetInterface *netf = (NetInterface *)kmalloc(sizeof(NetInterface));
+  rtl8139_install(netf,eth_controller);
   log_information("Installing Network Controller Successfully");
 
-  dhcp_discover();
+  DhcpDiscover(netf);
   // uint8_t e = 0b00001111;
   // __asm__ __volatile__ ("rorb $4,%0":"=r"(e):"r"(e));
   // e=SWITCH_BITS(e,4);

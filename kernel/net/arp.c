@@ -8,29 +8,55 @@
 #include <kernel/net/intf.h>
 #include <kernel/mem/kheap.h>
 
-static ArpEntry arp_table[10]={
-    {.isPresent=true,.ip=0xFFFFFFFF,.mac={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF}}
-};
-eth_addr_t broadcast_mac_address = {.n={0,0,0,0,0,0}};
+static ArpEntry arp_table[10];
+
+void arpTableAdd(MacAddress *macAddress,Ipv4Address *ipAddress){
+    
+    ArpEntry *arp_entry;
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        arp_entry = &arp_table[i];
+        if(arp_entry->isPresent && IsIpv4AddressEquals(ipAddress,&arp_entry->ip)){
+            CopyMacAddress(macAddress,&arp_entry->mac);
+            return;
+        }
+    }
+    
+    for (uint8_t i = 0;i < 10;i++)
+    {
+        
+        arp_entry = &arp_table[i];
+        if(!arp_entry->isPresent){
+            arp_entry->isPresent = true;
+            CopyIpv4Address(ipAddress,&arp_entry->ip);
+            CopyMacAddress(macAddress,&arp_entry->mac);
+            return ;
+        }
+    }
+}
 
 void arpReceive(NetBuffer *packet_buffer){
-    // if(SWITCH_ENDIAN16(packet->opcode) == 1){
-    //     //Request
-    // }else if(SWITCH_ENDIAN16(packet->opcode) == 2){
-    //     //replay
-    //     arp_table_add(&packet->src_hw_addr,&packet->src_protocol_addr);
-    // }
+    ArpHeader *arp_packet = (ArpHeader *)packet_buffer->packetData;
+    if(SWITCH_ENDIAN16(arp_packet->opCode) == ARP_OP_REQUEST){
+        arpSend(packet_buffer->interface,&arp_packet->srcMacAddr,&arp_packet->srcIpAddr,ARP_OP_REPLAY);
+    }
+    else if(SWITCH_ENDIAN16(arp_packet->opCode) == ARP_OP_REPLAY){
+        arpTableAdd(&arp_packet->srcMacAddr,&arp_packet->srcIpAddr);
+    }
 }
-void arpSend(MacAddress *dstMacAddr,Ipv4Address *dstIpAddr,ArpOpCode opCode)
+void arpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,ArpOpCode opCode)
 {
     NetBuffer *netbuffer = (NetBuffer *)kmalloc(sizeof(NetBuffer));
     uint32_t packet_size = sizeof(ArpHeader);
     ArpHeader *arp_header = (ArpHeader *)kmalloc(sizeof(ArpHeader));
 
+    netbuffer->packetData = (void *)arp_header;
+    netbuffer->length = packet_size;
+    netbuffer->interface = intf;
     //find way to get default interface
     CopyMacAddress(&netbuffer->interface->macAddress,&arp_header->srcMacAddr);
-    if(defaultAssignedIpAddress.assignMethod == None){
-        log_information("[arp:no-ip] No ip addres to send arp packet");
+    if(defaultAssignedIpAddress.assignMethod == IP_METHOD_NONE){
+        log_information("[arp:no-ip] No ip address to send arp packet");
         return;
     }
     CopyIpv4Address(&defaultAssignedIpAddress.Ip,&arp_header->srcIpAddr);
@@ -43,36 +69,35 @@ void arpSend(MacAddress *dstMacAddr,Ipv4Address *dstIpAddr,ArpOpCode opCode)
     arp_header->MacAddressLen = sizeof(MacAddress);
     arp_header->IpAddrLen = sizeof(Ipv4Address);
 
-    arp_header->hwType = SWITCH_ENDIAN16(0x1);
+    arp_header->hwType = SWITCH_ENDIAN16(ARP_ETH_TYPE);
     arp_header->protocol = SWITCH_ENDIAN16(ETHERTYPE_ARP);
 
-    netbuffer->packetData = (void *)arp_header;
-    netbuffer->length = packet_size;
-    EthernetSend(netbuffer,&g__broadcastMacAddress,ETHERTYPE_ARP);
+    EthernetSend(netbuffer,dstMacAddr,ETHERTYPE_ARP);
     // ethernet_send_packet(brdcast,(ptr_t)arp_pack,sizeof(arp_header_t),0x0806);
     kfree(netbuffer);
     kfree(arp_header);
 }
 
-void arpReceive(NetBuffer *packet_buffer){
-
-}
-ArpEntry *arp_lookup(Ipv4Address *ip){
+uint8_t *arp_lookup(NetInterface *intf, Ipv4Address ip){
+    if(IsIpv4AddressEquals(ip,g__broadcastIpAddress)){
+        return g__broadcastMacAddress;
+    }
     for (uint8_t i = 0; i < 10; i++)
     {
-        if(IsIpv4AddressEquals(arp_table[i].ip) arp_table[i].ip.bits == uip && arp_table[i].present){
-            return &arp_table[i];
+        if(IsIpv4AddressEquals(arp_table[i].ip,ip) && arp_table[i].isPresent){
+            return arp_table[i].mac;
         }
     }
 
-    arp_send_packet(&broadcast_mac_address,ip);
+    arpSend(intf, g__broadcastMacAddress,ip,ARP_OP_REQUEST);
+    // arp_send_packet(&broadcast_mac_address,ip);
     
     while (1)
     {
         for (uint8_t i = 0; i < 10; i++)
         {
-            if(arp_table[i].ip.bits == uip && arp_table[i].present){
-                return &arp_table[i];
+            if(IsIpv4AddressEquals(arp_table[i].ip,ip) && arp_table[i].isPresent){
+                return arp_table[i].mac;
             }
         }
     }
@@ -80,23 +105,4 @@ ArpEntry *arp_lookup(Ipv4Address *ip){
 
     return NULL;
     
-}
-struct arp_entry * arp_table_add(eth_addr_t * dst_hw_addr,ipv4_addr_t * dst_protocol_addr){
-    struct arp_entry *arp_entry;
-    if((arp_entry = arp_lookup(dst_protocol_addr))){
-        memcpy(arp_entry->mac.n,dst_hw_addr->n,6);
-        return arp_entry;
-    }else{
-        for (uint8_t i = 0;i < 10;i++)
-        {
-            arp_entry = &arp_table[i];
-            if(!arp_entry->present){
-                arp_entry->present = 1;
-                arp_entry->ip.bits = dst_protocol_addr->bits;
-                memcpy(&arp_entry->mac,dst_hw_addr,6);
-                return arp_entry;
-            }
-        }
-    }
-    return NULL;
 }

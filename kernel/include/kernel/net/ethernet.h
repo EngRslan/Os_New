@@ -45,7 +45,7 @@ typedef struct{
 } __attribute__ ((__packed__)) EthernetHeader;
 
 
-void EthernetSend(NetBuffer *packet_buffer,MacAddress *dstAddress,EthernetType et_type);
+void EthernetSend(NetBuffer *packet_buffer,MacAddress dstAddress,EthernetType et_type);
 void EthernetReceive(NetBuffer *packet_buffer);
 // void ethernet_handle_packet(struct ether_header * packet,int len);
 // void ethernet_send_packet(uint8_t ether_dhost[6],ptr_t data,uint32_t len,uint32_t protocol);

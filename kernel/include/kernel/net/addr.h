@@ -7,12 +7,12 @@ typedef uint8_t MacAddress[6];
 typedef uint8_t Ipv4Address[4];
 
 extern MacAddress g__broadcastMacAddress;
-extern MacAddress g__broadcastIpAddress;
+extern Ipv4Address g__broadcastIpAddress;
 
 typedef enum {
-    None = 0,
-    Static = 1,
-    Dhcp = 2,
+    IP_METHOD_NONE = 0,
+    IP_METHOD_STATIC = 1,
+    IP_METHOD_DHCP = 2,
 } IpAssignMethod;
 
 struct AssignedIpAddress {
@@ -41,11 +41,11 @@ typedef struct
 
 void ip2str(string_t str,ipv4_addr_t * ip);
 void mac2str(string_t str,eth_addr_t * mac);
-void CopyMacAddress(MacAddress * src, MacAddress * dst);
+void CopyMacAddress(MacAddress src, MacAddress dst);
 bool IsMacAddressEquals(MacAddress * left, MacAddress * right);
 void MacToStr(char *str,MacAddress mac);
 void Ipv4ToStr(char *str,Ipv4Address ip);
-bool IsIpv4AddressEquals(Ipv4Address * left, Ipv4Address * right);
-void CopyIpv4Address(Ipv4Address *src, Ipv4Address *dst);
+bool IsIpv4AddressEquals(Ipv4Address left, Ipv4Address right);
+void CopyIpv4Address(Ipv4Address src, Ipv4Address dst);
 
 #endif

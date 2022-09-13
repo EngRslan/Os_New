@@ -16,7 +16,7 @@ build: kernel
 kernel:
 	$(MAKE) --directory=$(KERNEL_DIR) build
 
-runn:
+run:
 	qemu-system-i386 -boot d -s -S -serial stdio -vga std -nodefaults \
 	-drive file=$(ISO_NAME),media=cdrom,if=ide \
 	-drive file=hdd.img,media=disk,if=ide,format=raw \
@@ -25,11 +25,11 @@ runn:
 	-object filter-dump,id=net0,netdev=net0,file=qdump \
 	-monitor telnet:127.0.0.1:55555,server,nowait;
 
-run:
+runn:
 	sudo qemu-system-i386 -boot d -s -S -serial stdio -vga std -nodefaults \
 	-drive file=$(ISO_NAME),media=cdrom,if=ide \
 	-drive file=hdd.img,media=disk,if=ide,format=raw \
-	-netdev tap,id=net0 \
+	-netdev bridge,id=net0 \
 	-device rtl8139,netdev=net0,id=nic0,mac=52:54:00:6a:40:01 \
 	-object filter-dump,id=net0,netdev=net0,file=qdump \
 	-monitor telnet:127.0.0.1:55555,server,nowait;

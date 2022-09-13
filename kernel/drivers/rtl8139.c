@@ -171,8 +171,8 @@ void rtl8139_install(NetInterface *netIf, pci_config_t * _device){
     memcpy(&netIf->name,hwvers,strlen(hwvers));
 
     char mac_str[19];
-    read_mac_addr(&netIf->macAddress);
-    MacToStr(mac_str,&netIf->macAddress);
+    read_mac_addr((uint8_t *)&netIf->macAddress);
+    MacToStr(mac_str,netIf->macAddress);
     log_trace("[rtl8139]: %s Detected MAC:%s",hwvers,mac_str);
 
     callocate_region(kernel_directory,(v_addr_t)rx_buffer,3,0,1);

@@ -55,11 +55,14 @@ void EthernetReceive(NetBuffer *packet_buffer){
         return;
     }
     EthernetType message_type = SWITCH_ENDIAN16(eth_packet->type);
+    packet_buffer->packetData = packet_buffer->packetData + sizeof(EthernetHeader);
+    packet_buffer->length -= sizeof(EthernetHeader);
 
     switch (message_type)
     {
     case ETHERTYPE_ARP:
         log_information("ARP Packet Recieved");
+        arpReceive(packet_buffer);
         break;
     case ETHERTYPE_IP:
         log_information("eth: Ip packet type arrived 0x%x",(uint32_t)message_type);
@@ -69,11 +72,11 @@ void EthernetReceive(NetBuffer *packet_buffer){
         break;
     }
 }
-void EthernetSend(NetBuffer *packet_buffer,MacAddress *dstAddress,EthernetType et_type){
+void EthernetSend(NetBuffer *packet_buffer,MacAddress dstAddress,EthernetType et_type){
     uint32_t packet_size = sizeof(EthernetHeader) + packet_buffer->length;
     EthernetHeader * eth_packet = (EthernetHeader *)kmalloc(packet_size);
-    CopyMacAddress(&packet_buffer->interface->macAddress, &eth_packet->srcHost);
-    CopyMacAddress(dstAddress,&eth_packet->destHost);
+    CopyMacAddress(packet_buffer->interface->macAddress, eth_packet->srcHost);
+    CopyMacAddress(dstAddress,eth_packet->destHost);
     eth_packet->type = SWITCH_ENDIAN16(et_type);
     
     memcpy((char *)eth_packet + sizeof(EthernetHeader),packet_buffer->packetData,packet_buffer->length);

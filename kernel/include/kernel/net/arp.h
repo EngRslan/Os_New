@@ -2,11 +2,13 @@
 #define ARP_H
 #include <kernel/types.h>
 #include <kernel/net/addr.h>
+#include <kernel/net/intf.h>
 #include <stdbool.h>
+#define ARP_ETH_TYPE 0x01
 
 typedef enum {
-    Request = 1,
-    Replay = 2
+    ARP_OP_REQUEST = 1,
+    ARP_OP_REPLAY = 2
 } ArpOpCode;
 
 typedef struct{
@@ -28,8 +30,8 @@ typedef struct
     Ipv4Address dstIpAddr;
 } __attribute__((packed)) ArpHeader;
 
-void arpSend(MacAddress *dstMacAddr,Ipv4Address *dstIpAddr,ArpOpCode opCode);
+void arpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,ArpOpCode opCode);
 void arpReceive(NetBuffer *packet_buffer);
-ArpEntry *arp_lookup(Ipv4Address *ip);
+uint8_t *arp_lookup(NetInterface *intf, Ipv4Address ip);
 
 #endif

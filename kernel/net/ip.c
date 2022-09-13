@@ -55,10 +55,13 @@ uint16_t NetChecksum(const uint8_t *data, const uint8_t *end)
     
 
 // }
-void ip_send_packet(ipv4_addr_t * dst_ip, ptr_t data,uint32_t len){
-    uint32_t total_size = sizeof(ipv4_header_t)+len;
-    ipv4_header_t * packet = kmalloc(total_size);
-    memset(packet,0,sizeof(ipv4_header_t));
+
+
+void IpSend(NetBuffer *netbuffer, Ipv4Address ip){
+
+    uint32_t total_size = sizeof(Ipv4Header)+netbuffer->length;
+    Ipv4Header *packet = (Ipv4Header *)kmalloc(total_size);
+    memset(packet,0,sizeof(Ipv4Header));
 
     packet->version = 4;
     packet->ihl = 5;
@@ -66,18 +69,12 @@ void ip_send_packet(ipv4_addr_t * dst_ip, ptr_t data,uint32_t len){
     packet->length = total_size;
     packet->ttl = 64;
     packet->protocol = 17;
-    packet->src_ip[0] = 0;
-    packet->src_ip[1] = 0;
-    packet->src_ip[2] = 0;
-    packet->src_ip[3] = 0;
-    
-    packet->dst_ip[0] = dst_ip->n[0];
-    packet->dst_ip[1] = dst_ip->n[1];
-    packet->dst_ip[2] = dst_ip->n[2];
-    packet->dst_ip[3] = dst_ip->n[3];
+
+    CopyIpv4Address(&defaultAssignedIpAddress.Ip,&packet->src_ip);
+    CopyIpv4Address(ip,&packet->dst_ip);
 
     ptr_t packet_data = (ptr_t)packet + (packet->ihl * 4);
-    memcpy(packet_data,data,len);
+    memcpy(packet_data,netbuffer->packetData,netbuffer->length);
 
     packet->ver_ihl = SWITCH_BITS(packet->ver_ihl,4);
     packet->flags_fragment = SWITCH_BITS((uint8_t)packet->flags_fragment,3);
@@ -85,17 +82,20 @@ void ip_send_packet(ipv4_addr_t * dst_ip, ptr_t data,uint32_t len){
 
     packet->checksum = 0;
     // packet->checksum = SWITCH_ENDIAN16(ip_calculate_checksum(packet));
-    packet->checksum = SWITCH_ENDIAN16(NetChecksum((uint8_t *)packet,(uint8_t *)packet+sizeof(ipv4_header_t)));
+    packet->checksum = SWITCH_ENDIAN16(NetChecksum((uint8_t *)packet,(uint8_t *)packet+sizeof(Ipv4Header)));
 
-    struct arp_entry * mac = arp_lookup(dst_ip);
+    uint8_t * mac = arp_lookup(netbuffer->interface,ip);
     if(!mac){
         return;
     }
 
-    char ip_str[50];
-    char mac_str[50];
-    ip2str(ip_str,dst_ip);
-    mac2str(mac_str,&mac->mac);
-    ethernet_send_packet(mac->mac.n ,(ptr_t)packet,total_size,0x0800);
+    char ip_str[19];
+    char mac_str[19];
+    Ipv4ToStr(ip_str,ip);
+    MacToStr(mac_str,mac);
+    netbuffer->packetData = (void *)packet;
+    netbuffer->length = total_size;
+    EthernetSend(netbuffer ,mac, ETHERTYPE_IP);
     log_trace("New IP packet sent to dest.IP:%s dest.mac:%s",ip_str,mac_str);
+    kfree(packet);
 }
