@@ -13,7 +13,7 @@ void dhcp_gen(NetInterface *intf, DhcpHeader *packet, uint8_t msg_type,Ipv4Addre
     packet->hw_type = 1;
     packet->hw_addr_len = 6;
     packet->hops = 0;
-    packet->xid = __builtin_bswap32(0x55555555);
+    packet->xid = __builtin_bswap32(0x45545545);
     packet->flags = SWITCH_ENDIAN16(0x8000);
     CopyMacAddress(intf->macAddress, packet->client_hw_addrp);
 

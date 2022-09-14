@@ -124,7 +124,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("current GMT Time Now %s",date);
 
   log_information("Installing Network Controller");
-  pci_config_t * eth_controller = pci_get_device(0x2,0x0);
+  pci_config_t *eth_controller = pci_get_device(0x2,0x0);
   NetInterface *netf = (NetInterface *)kmalloc(sizeof(NetInterface));
   rtl8139_install(netf,eth_controller);
   log_information("Installing Network Controller Successfully");

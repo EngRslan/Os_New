@@ -13,8 +13,8 @@ void UdpSend(NetBuffer *netbuffer, Ipv4Address ip,uint16_t src_port,uint16_t dst
     UdpHeader * packet = (UdpHeader *)kmalloc(total_size);
     memset((ptr_t)packet,0,total_size);
 
-    packet->dst_port = SWITCH_ENDIAN16(src_port);
-    packet->src_port = SWITCH_ENDIAN16(dst_port);
+    packet->src_port = SWITCH_ENDIAN16(src_port);
+    packet->dst_port = SWITCH_ENDIAN16(dst_port);
     packet->length = SWITCH_ENDIAN16(total_size);
     packet->checksum = 0;
 
