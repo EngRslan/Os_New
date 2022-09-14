@@ -61,14 +61,15 @@ void EthernetReceive(NetBuffer *packet_buffer){
     switch (message_type)
     {
     case ETHERTYPE_ARP:
-        log_information("ARP Packet Recieved");
+        log_information("[eth] ARP Packet Recieved");
         arpReceive(packet_buffer);
         break;
     case ETHERTYPE_IP:
-        log_information("eth: Ip packet type arrived 0x%x",(uint32_t)message_type);
+        log_information("[eth] Ip packet type arrived 0x%x",(uint32_t)message_type);
+
         break;
     default:
-        log_warning("eth: Unhandled protocol type 0x%x",(uint32_t)message_type);
+        log_warning("[eth] Unhandled protocol type 0x%x",(uint32_t)message_type);
         break;
     }
 }

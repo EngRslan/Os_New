@@ -16,7 +16,7 @@ build: kernel
 kernel:
 	$(MAKE) --directory=$(KERNEL_DIR) build
 
-runs:
+run:
 	qemu-system-i386 -boot d -s -S -serial stdio -vga std -nodefaults \
 	-drive file=$(ISO_NAME),media=cdrom,if=ide \
 	-drive file=hdd.img,media=disk,if=ide,format=raw \
@@ -25,7 +25,7 @@ runs:
 	-object filter-dump,id=net0,netdev=net0,file=qdump \
 	-monitor telnet:127.0.0.1:55555,server,nowait;
 
-run:
+runs:
 	sudo qemu-system-i386 -boot d -s -S -serial stdio -vga std -nodefaults \
 	-drive file=$(ISO_NAME),media=cdrom,if=ide \
 	-drive file=hdd.img,media=disk,if=ide,format=raw \

@@ -6,7 +6,40 @@
 #include <kernel/bits.h>
 #include <string.h>
 #include <logger.h>
+#include <stddef.h>
 
+#define IP_PROTOCOL_MAX_ENTRIES  50
+static IpProtocolTableEntry ipProtocolTable[IP_PROTOCOL_MAX_ENTRIES];
+
+void RegisterIpProtocolHandler(IpProtocol protocol, IpProtocolHandler handler){
+    
+    if(handler == NULL)
+    {
+        return;
+    }
+
+    IpProtocolTableEntry * entry = NULL;
+    for (uint8_t i = 0; i < IP_PROTOCOL_MAX_ENTRIES; i++)
+    {
+        if(ipProtocolTable[i].isPresent){
+            if(ipProtocolTable[i].protocol == protocol){
+                log_information("[Ip:protocol-override] Override protocol %x handler",(uint32_t)protocol);
+                ipProtocolTable[i].handler = handler;
+                return;
+            }
+            continue;
+        } 
+        else if(entry == NULL)
+        {
+            entry = &ipProtocolTable[i];
+        }
+    }
+
+    entry->isPresent = true;
+    entry->protocol = protocol;
+    entry->handler = handler;
+    
+}
 uint16_t NetChecksumFinal(uint32_t sum)
 {
     sum = (sum & 0xffff) + (sum >> 16);
@@ -56,19 +89,42 @@ uint16_t NetChecksum(const uint8_t *data, const uint8_t *end)
 
 // }
 
+void IpReceive(NetBuffer *netbuffer)
+{
+    Ipv4Header *packetHeader = (Ipv4Header *)netbuffer->packetData;
 
-void IpSend(NetBuffer *netbuffer, Ipv4Address ip){
+    //TODO: Checksum
+    if(!IsIpv4AddressEquals(defaultAssignedIpAddress.Ip,packetHeader->dst_ip) 
+        &&!IsIpv4AddressEquals(g__broadcastIpAddress,packetHeader->dst_ip))
+    {
+        log_information("[Ip:mismatch-ip] Packet Dropped. Mismatch Ip");
+        return;
+    }
+    for (uint8_t i = 0; i < IP_PROTOCOL_MAX_ENTRIES; i++)
+    {
+       if(ipProtocolTable[i].isPresent && ipProtocolTable[i].protocol == packetHeader->protocol){
+            netbuffer->packetData = netbuffer->packetData + sizeof(Ipv4Header);
+            netbuffer->length -= sizeof(Ipv4Header);
+            ipProtocolTable[i].handler(netbuffer);
+            return;
+       }
+    }
+
+    log_warning("[Ip:no-handler] Packet Dropped. No Handler Registered for Protocol %x",(uint32_t)packetHeader->protocol);
+}
+void IpSend(NetBuffer *netbuffer, Ipv4Address ip, IpProtocol ipProtocol){
 
     uint32_t total_size = sizeof(Ipv4Header)+netbuffer->length;
     Ipv4Header *packet = (Ipv4Header *)kmalloc(total_size);
     memset(packet,0,sizeof(Ipv4Header));
 
     packet->version = 4;
-    packet->ihl = 5;
+    packet->ihl = sizeof(Ipv4Header) / 4;
     packet->tos = 0;
     packet->length = total_size;
+    packet->id = 0;
     packet->ttl = 64;
-    packet->protocol = 17;
+    packet->protocol = ipProtocol;
 
     CopyIpv4Address(defaultAssignedIpAddress.Ip,packet->src_ip);
     CopyIpv4Address(ip,packet->dst_ip);

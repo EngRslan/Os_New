@@ -36,5 +36,24 @@ typedef struct
     
 } __attribute__((packed)) Ipv4Header;
 
-void IpSend(NetBuffer *netbuffer, Ipv4Address ip);
+typedef enum {
+    IP_ICMP     = 0x01,
+    IP_IGMP     = 0x02,
+    IP_ST       = 0x05,
+    IP_TCP      = 0x06,
+    IP_UDP      = 0x11,
+    IP_RDP      = 0x1B,
+    IP_IPV6     = 0x2A
+} IpProtocol;
+typedef void (*IpProtocolHandler)(NetBuffer *);
+
+typedef struct {
+    bool isPresent;
+    uint8_t protocol;
+    IpProtocolHandler handler;
+} IpProtocolTableEntry;
+
+void IpSend(NetBuffer *netbuffer, Ipv4Address ip, IpProtocol ipProtocol);
+void IpReceive(NetBuffer *netbuffer);
+void RegisterIpProtocolHandler(IpProtocol protocol, IpProtocolHandler handler);
 #endif

@@ -10,9 +10,9 @@ extern MacAddress g__broadcastMacAddress;
 extern Ipv4Address g__broadcastIpAddress;
 
 typedef enum {
-    IP_METHOD_NONE = 0,
-    IP_METHOD_STATIC = 1,
-    IP_METHOD_DHCP = 2,
+    IP_METHOD_NONE      = 0,
+    IP_METHOD_STATIC    = 1,
+    IP_METHOD_DHCP      = 2,
 } IpAssignMethod;
 
 struct AssignedIpAddress {
@@ -39,8 +39,6 @@ typedef struct
 }__attribute__((packed)) eth_addr_t;
 
 
-// void ip2str(string_t str,ipv4_addr_t * ip);
-// void mac2str(string_t str,eth_addr_t * mac);
 void CopyMacAddress(MacAddress src, MacAddress dst);
 bool IsMacAddressEquals(MacAddress left, MacAddress right);
 void MacToStr(char *str,MacAddress mac);
