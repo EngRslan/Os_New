@@ -22,7 +22,7 @@ void CopyMacAddress(MacAddress src, MacAddress dst){
     memcpy((void *)dst,(void *)src,sizeof(MacAddress));
 }
 
-bool IsMacAddressEquals(MacAddress * left, MacAddress * right){
+bool IsMacAddressEquals(MacAddress left, MacAddress right){
     return memcmp((void *)left,(void *)right,sizeof(MacAddress)) == 0;
 }
 

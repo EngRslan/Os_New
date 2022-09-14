@@ -2,6 +2,7 @@
 #define RTL8139
 #include <kernel/drivers/pci.h>
 #include <kernel/types.h>
+#include <kernel/net/addr.h>
 #include <kernel/net/intf.h>
 
 struct packet_header
@@ -37,7 +38,7 @@ struct packet_header
 } __attribute__((packed));
 
 void rtl8139_install(NetInterface *netIf, pci_config_t * _device);
-void read_mac_addr(uint8_t mac_addr[]);
+void read_mac_addr(MacAddress mac_addr);
 void rtl8139_send_packet(ptr_t data,uint32_t len);
 
 #endif // RTL8139

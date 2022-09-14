@@ -65,7 +65,7 @@ uint8_t get_hwverid(uint32_t io_addr,string_t * s){
     }
     return hwverid;
 }
-void read_mac_addr(uint8_t mac_addr[]){
+void read_mac_addr(MacAddress mac_addr){
     mac_addr[0] = inportb(io_addr + 0);
     mac_addr[1] = inportb(io_addr + 1);
     mac_addr[2] = inportb(io_addr + 2);
@@ -168,10 +168,10 @@ void rtl8139_install(NetInterface *netIf, pci_config_t * _device){
 
     string_t hwvers = NULL;
     uint32_t hwverid = get_hwverid(io_addr,&hwvers);
-    memcpy(&netIf->name,hwvers,strlen(hwvers));
+    memcpy(netIf->name,hwvers,strlen(hwvers));
 
     char mac_str[19];
-    read_mac_addr((uint8_t *)&netIf->macAddress);
+    read_mac_addr(netIf->macAddress);
     MacToStr(mac_str,netIf->macAddress);
     log_trace("[rtl8139]: %s Detected MAC:%s",hwvers,mac_str);
 
@@ -191,5 +191,6 @@ void rtl8139_install(NetInterface *netIf, pci_config_t * _device){
 
     uint8_t irq = 32 + dev->interrupt_line;
     register_interrupt_handler(irq,eth_irq_handler);
+    _netIf = netIf;
     netIf->send = rtl8139Send;
 }

@@ -10,14 +10,14 @@
 
 static ArpEntry arp_table[10];
 
-void arpTableAdd(MacAddress *macAddress,Ipv4Address *ipAddress){
+void arpTableAdd(MacAddress macAddress,Ipv4Address ipAddress){
     
     ArpEntry *arp_entry;
     for (uint8_t i = 0; i < 10; i++)
     {
         arp_entry = &arp_table[i];
-        if(arp_entry->isPresent && IsIpv4AddressEquals(ipAddress,&arp_entry->ip)){
-            CopyMacAddress(macAddress,&arp_entry->mac);
+        if(arp_entry->isPresent && IsIpv4AddressEquals(ipAddress,arp_entry->ip)){
+            CopyMacAddress(macAddress,arp_entry->mac);
             return;
         }
     }
@@ -28,8 +28,8 @@ void arpTableAdd(MacAddress *macAddress,Ipv4Address *ipAddress){
         arp_entry = &arp_table[i];
         if(!arp_entry->isPresent){
             arp_entry->isPresent = true;
-            CopyIpv4Address(ipAddress,&arp_entry->ip);
-            CopyMacAddress(macAddress,&arp_entry->mac);
+            CopyIpv4Address(ipAddress,arp_entry->ip);
+            CopyMacAddress(macAddress,arp_entry->mac);
             return ;
         }
     }
@@ -38,10 +38,10 @@ void arpTableAdd(MacAddress *macAddress,Ipv4Address *ipAddress){
 void arpReceive(NetBuffer *packet_buffer){
     ArpHeader *arp_packet = (ArpHeader *)packet_buffer->packetData;
     if(SWITCH_ENDIAN16(arp_packet->opCode) == ARP_OP_REQUEST){
-        arpSend(packet_buffer->interface,&arp_packet->srcMacAddr,&arp_packet->srcIpAddr,ARP_OP_REPLAY);
+        arpSend(packet_buffer->interface,arp_packet->srcMacAddr,arp_packet->srcIpAddr,ARP_OP_REPLAY);
     }
     else if(SWITCH_ENDIAN16(arp_packet->opCode) == ARP_OP_REPLAY){
-        arpTableAdd(&arp_packet->srcMacAddr,&arp_packet->srcIpAddr);
+        arpTableAdd(arp_packet->srcMacAddr,arp_packet->srcIpAddr);
     }
 }
 void arpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,ArpOpCode opCode)
@@ -54,15 +54,15 @@ void arpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,Arp
     netbuffer->length = packet_size;
     netbuffer->interface = intf;
     //find way to get default interface
-    CopyMacAddress(&netbuffer->interface->macAddress,&arp_header->srcMacAddr);
+    CopyMacAddress(netbuffer->interface->macAddress,arp_header->srcMacAddr);
     if(defaultAssignedIpAddress.assignMethod == IP_METHOD_NONE){
         log_information("[arp:no-ip] No ip address to send arp packet");
         return;
     }
-    CopyIpv4Address(&defaultAssignedIpAddress.Ip,&arp_header->srcIpAddr);
+    CopyIpv4Address(defaultAssignedIpAddress.Ip,arp_header->srcIpAddr);
 
-    CopyMacAddress(dstMacAddr, &arp_header->dstMacAddr);
-    CopyIpv4Address(dstIpAddr,&arp_header->dstIpAddr);
+    CopyMacAddress(dstMacAddr, arp_header->dstMacAddr);
+    CopyIpv4Address(dstIpAddr,arp_header->dstIpAddr);
 
     arp_header->opCode = SWITCH_ENDIAN16(opCode);
 

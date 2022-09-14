@@ -47,8 +47,8 @@
 
 void EthernetReceive(NetBuffer *packet_buffer){
     EthernetHeader * eth_packet = (EthernetHeader *)packet_buffer->packetData;
-    if(!IsMacAddressEquals(&packet_buffer->interface->macAddress,&eth_packet->destHost)
-        && !IsMacAddressEquals(&g__broadcastMacAddress,&eth_packet->destHost)){
+    if(!IsMacAddressEquals(packet_buffer->interface->macAddress,eth_packet->destHost)
+        && !IsMacAddressEquals(g__broadcastMacAddress,eth_packet->destHost)){
         char mac_str[19];
         MacToStr(mac_str,eth_packet->destHost);
         log_trace("[eth:hwid-mismatch] packet dropped destination host address %s",mac_str);

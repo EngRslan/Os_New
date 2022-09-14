@@ -70,8 +70,8 @@ void IpSend(NetBuffer *netbuffer, Ipv4Address ip){
     packet->ttl = 64;
     packet->protocol = 17;
 
-    CopyIpv4Address(&defaultAssignedIpAddress.Ip,&packet->src_ip);
-    CopyIpv4Address(ip,&packet->dst_ip);
+    CopyIpv4Address(defaultAssignedIpAddress.Ip,packet->src_ip);
+    CopyIpv4Address(ip,packet->dst_ip);
 
     ptr_t packet_data = (ptr_t)packet + (packet->ihl * 4);
     memcpy(packet_data,netbuffer->packetData,netbuffer->length);

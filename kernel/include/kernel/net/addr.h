@@ -39,10 +39,10 @@ typedef struct
 }__attribute__((packed)) eth_addr_t;
 
 
-void ip2str(string_t str,ipv4_addr_t * ip);
-void mac2str(string_t str,eth_addr_t * mac);
+// void ip2str(string_t str,ipv4_addr_t * ip);
+// void mac2str(string_t str,eth_addr_t * mac);
 void CopyMacAddress(MacAddress src, MacAddress dst);
-bool IsMacAddressEquals(MacAddress * left, MacAddress * right);
+bool IsMacAddressEquals(MacAddress left, MacAddress right);
 void MacToStr(char *str,MacAddress mac);
 void Ipv4ToStr(char *str,Ipv4Address ip);
 bool IsIpv4AddressEquals(Ipv4Address left, Ipv4Address right);

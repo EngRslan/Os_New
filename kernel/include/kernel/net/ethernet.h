@@ -41,7 +41,7 @@ typedef enum {
 typedef struct{
     MacAddress destHost;
     MacAddress srcHost;
-    EthernetType type;
+    uint16_t type;
 } __attribute__ ((__packed__)) EthernetHeader;
 
 
