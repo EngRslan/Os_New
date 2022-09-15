@@ -11,7 +11,7 @@
 #define IP_PROTOCOL_MAX_ENTRIES  50
 static IpProtocolTableEntry ipProtocolTable[IP_PROTOCOL_MAX_ENTRIES];
 
-void RegisterIpProtocolHandler(IpProtocol protocol, IpProtocolHandler handler){
+void IpRegisterProtocolHandler(IpProtocol protocol, IpProtocolHandler handler){
     
     if(handler == NULL)
     {
@@ -29,7 +29,7 @@ void RegisterIpProtocolHandler(IpProtocol protocol, IpProtocolHandler handler){
             }
             continue;
         } 
-        else if(entry == NULL)
+        else if(entry == NULL && !ipProtocolTable[i].isPresent)
         {
             entry = &ipProtocolTable[i];
         }
@@ -140,7 +140,7 @@ void IpSend(NetBuffer *netbuffer, Ipv4Address ip, IpProtocol ipProtocol){
     // packet->checksum = SWITCH_ENDIAN16(ip_calculate_checksum(packet));
     packet->checksum = SWITCH_ENDIAN16(NetChecksum((uint8_t *)packet,(uint8_t *)packet+sizeof(Ipv4Header)));
 
-    uint8_t * mac = arp_lookup(netbuffer->interface,ip);
+    uint8_t * mac = Arp_lookup(netbuffer->interface,ip);
     if(!mac){
         return;
     }

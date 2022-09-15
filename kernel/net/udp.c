@@ -45,7 +45,7 @@ void UdpReceive(NetBuffer * netBuffer){
     {
         if(udpTable[i].isPresent && udpTable[i].port == SWITCH_ENDIAN16(udpHeader->dst_port)){
             if(udpTable[i].handler){
-                netBuffer->packetData = (uint8_t *)netBuffer+sizeof(UdpHeader);
+                netBuffer->packetData = (uint8_t *)netBuffer->packetData+sizeof(UdpHeader);
                 netBuffer->length -= sizeof(UdpHeader);
                 udpTable[i].handler(netBuffer);
                 return;

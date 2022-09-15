@@ -79,8 +79,8 @@ void DhcpReceive(NetBuffer *netbuffer){
         log_information("[Dhcp:unexpected-request] packet dropped unexpected packet recevied");
         return;
     }
-
-    if(packet->xid != dhcpOptions.xid){
+    //Switch ednian
+    if(SWITCH_ENDIAN32(packet->xid) != dhcpOptions.xid){
         log_warning("[Dhcp:xid-mismatch] Packet Dropped XID Changed");
         return;
     }
@@ -133,7 +133,7 @@ void DhcpReceive(NetBuffer *netbuffer){
             }
             case DHCP_OPT_ARP_CACHE_TIMEOUT:
             {
-                dhcpOptions.arpCachTimeout = *(uint32_t *)dataPtr;
+                dhcpOptions.arpCachTimeout = SWITCH_ENDIAN32(*(uint32_t *)dataPtr);
                 break;
             }
             case DHCP_OPT_TCPTTL:
@@ -148,7 +148,7 @@ void DhcpReceive(NetBuffer *netbuffer){
             }
             case DHCP_OPT_IPLEASETIME:
             {
-                dhcpOptions.leaseTime = *(uint32_t *)dataPtr;
+                dhcpOptions.leaseTime = SWITCH_ENDIAN32(*(uint32_t *)dataPtr);
                 break;
             }
             case DHCP_OPT_MESSAGETYPE:
@@ -175,7 +175,7 @@ void DhcpReceive(NetBuffer *netbuffer){
     if(dhcpOptions.messageType == DHCP_MSG_OFFER){
         uint32_t msgSize = sizeof(DhcpHeader)+64;
         DhcpHeader *dhcp_packet = (DhcpHeader *)kmalloc(msgSize);
-        memset(packet,0,msgSize);
+        memset(dhcp_packet,0,msgSize);
         dhcpRequest(netbuffer->interface,dhcp_packet);
         kfree(dhcp_packet);
     }
@@ -199,7 +199,7 @@ void DhcpDiscover(NetInterface *intf){
     netbuffer->interface = intf;
     netbuffer->packetData = packet;
     netbuffer->length = total_size;
-    UdpSend(netbuffer,g__broadcastIpAddress,68,67);
+    UdpSend(netbuffer, g__broadcastIpAddress, DHCP_DEFAULT_BOOT_CLIENT_PORT, DHCP_DEFAULT_BOOT_SERVER_PORT);
     kfree(netbuffer);
     kfree(packet);
 }
@@ -228,7 +228,7 @@ void dhcpRequest(NetInterface *intf, DhcpHeader *packet){
     netbuffer->interface = intf;
     netbuffer->packetData = packet;
     netbuffer->length = total_size;
-    UdpSend(netbuffer,g__broadcastIpAddress,68,67);
+    UdpSend(netbuffer,g__broadcastIpAddress,DHCP_DEFAULT_BOOT_CLIENT_PORT,DHCP_DEFAULT_BOOT_SERVER_PORT);
     kfree(netbuffer);
     kfree(packet);
 }

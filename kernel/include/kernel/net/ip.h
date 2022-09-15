@@ -55,5 +55,5 @@ typedef struct {
 
 void IpSend(NetBuffer *netbuffer, Ipv4Address ip, IpProtocol ipProtocol);
 void IpReceive(NetBuffer *netbuffer);
-void RegisterIpProtocolHandler(IpProtocol protocol, IpProtocolHandler handler);
+void IpRegisterProtocolHandler(IpProtocol protocol, IpProtocolHandler handler);
 #endif

@@ -18,7 +18,7 @@ typedef enum {
 struct AssignedIpAddress {
     IpAssignMethod assignMethod;
     Ipv4Address Ip;
-    uint8_t subnet;
+    Ipv4Address subnet;
     Ipv4Address gateway;
 };
 

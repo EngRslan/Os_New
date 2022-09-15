@@ -28,6 +28,7 @@
 #include <kernel/net/arp.h>
 #include <kernel/net/addr.h>
 #include <kernel/net/dhcp.h>
+#include <kernel/net/manager.h>
 
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -123,13 +124,10 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   str_date(date);
   log_information("current GMT Time Now %s",date);
 
-  log_information("Installing Network Controller");
-  pci_config_t *eth_controller = pci_get_device(0x2,0x0);
-  NetInterface *netf = (NetInterface *)kmalloc(sizeof(NetInterface));
-  rtl8139_install(netf,eth_controller);
-  log_information("Installing Network Controller Successfully");
+  log_information("Installing Network");
+  NetworkInstall();
+  log_information("Installing Network Successfully");
 
-  DhcpDiscover(netf);
   // uint8_t e = 0b00001111;
   // __asm__ __volatile__ ("rorb $4,%0":"=r"(e):"r"(e));
   // e=SWITCH_BITS(e,4);

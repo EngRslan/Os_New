@@ -35,16 +35,16 @@ void arpTableAdd(MacAddress macAddress,Ipv4Address ipAddress){
     }
 }
 
-void arpReceive(NetBuffer *packet_buffer){
+void ArpReceive(NetBuffer *packet_buffer){
     ArpHeader *arp_packet = (ArpHeader *)packet_buffer->packetData;
     if(SWITCH_ENDIAN16(arp_packet->opCode) == ARP_OP_REQUEST){
-        arpSend(packet_buffer->interface,arp_packet->srcMacAddr,arp_packet->srcIpAddr,ARP_OP_REPLAY);
+        ArpSend(packet_buffer->interface,arp_packet->srcMacAddr,arp_packet->srcIpAddr,ARP_OP_REPLAY);
     }
     else if(SWITCH_ENDIAN16(arp_packet->opCode) == ARP_OP_REPLAY){
         arpTableAdd(arp_packet->srcMacAddr,arp_packet->srcIpAddr);
     }
 }
-void arpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,ArpOpCode opCode)
+void ArpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,ArpOpCode opCode)
 {
     NetBuffer *netbuffer = (NetBuffer *)kmalloc(sizeof(NetBuffer));
     uint32_t packet_size = sizeof(ArpHeader);
@@ -78,7 +78,7 @@ void arpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,Arp
     kfree(arp_header);
 }
 
-uint8_t *arp_lookup(NetInterface *intf, Ipv4Address ip){
+uint8_t *Arp_lookup(NetInterface *intf, Ipv4Address ip){
     if(IsIpv4AddressEquals(ip,g__broadcastIpAddress)){
         return g__broadcastMacAddress;
     }
@@ -89,7 +89,7 @@ uint8_t *arp_lookup(NetInterface *intf, Ipv4Address ip){
         }
     }
 
-    arpSend(intf, g__broadcastMacAddress,ip,ARP_OP_REQUEST);
+    ArpSend(intf, g__broadcastMacAddress,ip,ARP_OP_REQUEST);
     // arp_send_packet(&broadcast_mac_address,ip);
     
     while (1)

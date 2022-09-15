@@ -30,8 +30,8 @@ typedef struct
     Ipv4Address dstIpAddr;
 } __attribute__((packed)) ArpHeader;
 
-void arpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,ArpOpCode opCode);
-void arpReceive(NetBuffer *packet_buffer);
-uint8_t *arp_lookup(NetInterface *intf, Ipv4Address ip);
+void ArpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,ArpOpCode opCode);
+void ArpReceive(NetBuffer *packet_buffer);
+uint8_t *Arp_lookup(NetInterface *intf, Ipv4Address ip);
 
 #endif

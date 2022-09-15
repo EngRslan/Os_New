@@ -4,6 +4,8 @@
 #include <kernel/net/intf.h>
 #include <kernel/net/addr.h>
 #define DHCP_MAGIC_NUMBER 0x63825363
+#define DHCP_DEFAULT_BOOT_SERVER_PORT 67
+#define DHCP_DEFAULT_BOOT_CLIENT_PORT 68
 
 typedef struct { 
     uint8_t options;
@@ -16,7 +18,7 @@ typedef enum {
 } DhcpOp;
 
 typedef enum {
-    DHCP_MSG_DISCOVER   = 0x02,
+    DHCP_MSG_DISCOVER   = 0x01,
     DHCP_MSG_OFFER      = 0x02,
     DHCP_MSG_REQUEST    = 0x03,
     DHCP_MSG_DECLINE    = 0x04,
@@ -65,4 +67,6 @@ typedef struct {
 } __attribute__((packed)) DhcpHeader;
 
 void DhcpDiscover(NetInterface *intf);
+void DhcpReceive(NetBuffer *netbuffer);
+
 #endif

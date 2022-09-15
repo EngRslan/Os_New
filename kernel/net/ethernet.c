@@ -6,45 +6,33 @@
 #include <kernel/mem/kheap.h>
 #include <logger.h>
 #include <string.h>
+#define MAX_ETHERNET_PROTOCOLS_ENTRIES 10
 
-// void ethernet_handle_packet(struct ether_header * packet,int len){
-//     ptr_t data = (ptr_t) packet + sizeof(struct ether_header);
-//     uint32_t datalen = len-sizeof(struct ether_header);
+typedef struct {
+    bool isPresent;
+    EthernetType type;
+    EthernetHandler handler;
+    
+} EthernetProtocolTableEntry;
 
-//     char from_address_str[(3*6)+1];
-//     mac2str(from_address_str,(eth_addr_t *)packet->ether_shost);
-//     char to_address_str[(3*6)+1];
-//     mac2str(to_address_str,(eth_addr_t *)packet->ether_dhost);
-//     log_trace("eth: new packet type 0x%x from address: %s to address: %s" ,(uint32_t)SWITCH_ENDIAN16(packet->type),from_address_str,to_address_str);
+static EthernetProtocolTableEntry protocolTable[MAX_ETHERNET_PROTOCOLS_ENTRIES];
+void EthernetRegisterProtocol(EthernetType etherType,EthernetHandler handler){
+    EthernetProtocolTableEntry * entry = NULL;
+    for (uint8_t i = 0; i < MAX_ETHERNET_PROTOCOLS_ENTRIES; i++)
+    {
+        if(protocolTable[i].isPresent && protocolTable[i].type == etherType){
+            log_warning("[eth:protocol_override] Current Protocol entry override");
+            protocolTable[i].handler = handler;
+            return;
+        }else if(entry == NULL && !protocolTable[i].isPresent){
+            entry = &protocolTable[i];
+        }
+    }
 
-//     switch (SWITCH_ENDIAN16(packet->type))
-//     {
-//     case  ETHERTYPE_ARP:
-//         log_information("ARP Packet Recieved");
-//         arp_handle_packet((arp_header_t *) data,datalen);
-//         break;
-//     case  ETHERTYPE_IP:
-//         log_information("eth: Ip packet type arrived 0x%x",(uint32_t)SWITCH_ENDIAN16(packet->type));
-//         break;
-//     case  ETHERTYPE_IPV6:
-//         log_warning("eth: Protocol IPv6 Unsuported");
-//         break;
-//     default:
-//         log_warning("eth: Unhandled protocol type 0x%x",SWITCH_ENDIAN16(packet->type));
-//         break;
-//     }
-// }
-
-// void ethernet_send_packet(uint8_t ether_dhost[6],ptr_t data,uint32_t len,uint32_t protocol){
-//     struct ether_header * packet = (struct ether_header *)kmalloc(sizeof(struct ether_header) + len);
-//     read_mac_addr(packet->ether_shost);
-//     memcpy(packet->ether_dhost,ether_dhost,6);
-//     memcpy((uint8_t *)packet+sizeof(struct ether_header),data,len);
-//     packet->type = SWITCH_ENDIAN16(protocol);
-//     rtl8139_send_packet((ptr_t)packet,sizeof(struct ether_header) + len);
-//     kfree(packet);
-// }
-
+    entry->isPresent = true;
+    entry->type = etherType;
+    entry->handler = handler;
+}
 void EthernetReceive(NetBuffer *packet_buffer){
     EthernetHeader * eth_packet = (EthernetHeader *)packet_buffer->packetData;
     if(!IsMacAddressEquals(packet_buffer->interface->macAddress,eth_packet->destHost)
@@ -58,20 +46,16 @@ void EthernetReceive(NetBuffer *packet_buffer){
     packet_buffer->packetData = packet_buffer->packetData + sizeof(EthernetHeader);
     packet_buffer->length -= sizeof(EthernetHeader);
 
-    switch (message_type)
+    for (uint8_t i = 0; i < MAX_ETHERNET_PROTOCOLS_ENTRIES; i++)
     {
-    case ETHERTYPE_ARP:
-        log_information("[eth] ARP Packet Recieved");
-        arpReceive(packet_buffer);
-        break;
-    case ETHERTYPE_IP:
-        log_information("[eth] Ip packet type arrived 0x%x",(uint32_t)message_type);
+        if(protocolTable[i].isPresent && protocolTable[i].type == message_type){
+            protocolTable[i].handler(packet_buffer);
+            break;
+        }
 
-        break;
-    default:
         log_warning("[eth] Unhandled protocol type 0x%x",(uint32_t)message_type);
-        break;
     }
+    kfree(eth_packet);
 }
 void EthernetSend(NetBuffer *packet_buffer,MacAddress dstAddress,EthernetType et_type){
     uint32_t packet_size = sizeof(EthernetHeader) + packet_buffer->length;
