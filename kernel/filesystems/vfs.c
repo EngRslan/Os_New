@@ -47,7 +47,6 @@ vfs_node_t * get_mountpoint_recur(string_t path,gtree_node_t * subroot){
     return get_mountpoint_recur(path,subroot);
 
 }
-
 vfs_node_t * get_mountpoint(string_t path){
     if(strlen(path) > 1 && path[strlen(path) - 1] == '/'){
         path[strlen(path) - 1] = 0;
@@ -135,6 +134,9 @@ void print_hierarchy(gtree_node_t * node,int depth){
 }
 void print_h(){
     gtree_descendant_exec(vfs_tree->root,print_hierarchy,0);
+}
+vfs_node_t *open_dir(string_t dir){
+    
 }
 void vfs_install(){
     vfs_entry_t * root = (vfs_entry_t *)kmalloc(sizeof(vfs_entry_t));

@@ -30,6 +30,7 @@
 #include <kernel/net/dhcp.h>
 #include <kernel/net/manager.h>
 
+void loadKernelMods();
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
   
@@ -128,6 +129,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   NetworkInstall();
   log_information("Installing Network Successfully");
 
+  loadKernelMods();
   // uint8_t e = 0b00001111;
   // __asm__ __volatile__ ("rorb $4,%0":"=r"(e):"r"(e));
   // e=SWITCH_BITS(e,4);
@@ -156,4 +158,9 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   for (;;) { }
   
 
+}
+
+
+void loadKernelMods(){
+  // file_open("/boot/testmod.so");
 }
