@@ -20,6 +20,7 @@
 #include <kernel/datastruct/list.h>
 #include <kernel/datastruct/gtree.h>
 #include <kernel/filesystems/fs.h>
+#include <kernel/filesystems/vfs.h>
 #include <kernel/filesystems/iso9660.h>
 #include <kernel/system.h>
 #include <logger.h>
@@ -119,7 +120,9 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   
 
   log_information("Installing ISO9660 FileSystem");
-  //iso9660_install("/dev/hda","/");
+  iso9660_install();
+  VfsMountFs("/dev/hda","/mnt/cdrom",ISO9660_FILESYSTEM_NAME);
+  print_h();
   log_information("ISO9660 FileSystem installed successfully");
   char date[50];
   str_date(date);

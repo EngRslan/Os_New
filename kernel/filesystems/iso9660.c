@@ -1,3 +1,4 @@
+#include <kernel/filesystems/iso9660.h>
 #include <kernel/filesystems/vfs.h>
 #include <kernel/mem/kheap.h>
 #include <string.h>
@@ -56,28 +57,62 @@ typedef struct {
     directory_t root_directory                   ;
 } __attribute__((packed)) PVD_t;
 
-typedef struct iso9660_fs
+typedef struct Iso9660
 {
     uint32_t sector_size;
     PVD_t * pvd;
     FsNode * device;
-} iso9660_fs_t;
+} Iso9660;
 
-void read_disk_block(iso9660_fs_t * fs,uint32_t block,char * buffer){
+void read_disk_block(Iso9660 * fs,uint32_t block,char * buffer){
     FsRead(fs->device,fs->sector_size * block,fs->sector_size,(uint8_t *)buffer);
 }
-void iso9660_install(string_t device,string_t mount_point){
-    iso9660_fs_t * isofs = (iso9660_fs_t *)kmalloc(sizeof(iso9660_fs_t));
-    // isofs->device = FsOpen(device,0,0);
+void iso9660_install(){
+    VfsFileSystem *fs = (VfsFileSystem *)kmalloc(sizeof(VfsFileSystem));
+    strcpy(fs->name,ISO9660_FILESYSTEM_NAME);
+    fs->mount = mount;
+    VfsRegisterFileSystem(fs);
+}
+
+uint32_t Read(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
+
+}
+uint32_t Write(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
+
+}
+void Open(FsNode *node){
+
+}
+void Close(FsNode *node){
+
+}
+DirEntry *ReadDir(FsNode *node,uint32_t index){
+
+}
+FsNode *FindDir(FsNode *node,char *name){
+
+}
+
+void mount(char *device, char* mount_point){
+    Iso9660 * isofs = (Iso9660 *)kmalloc(sizeof(Iso9660));
+    isofs->device = VfsGetMountpoint(device);
     isofs->sector_size = 2048;
     isofs->pvd = (PVD_t *)kmalloc(isofs->sector_size);
     read_disk_block(isofs,0x10,(void *)isofs->pvd);
     isofs->sector_size = isofs->pvd->logical_block_size_lsb;
-    FsNode * iso9660_vfs_node = kmalloc(sizeof(FsNode));
-    strcpy(iso9660_vfs_node->name,"/");
-    // iso9660_vfs_node->inode = (uint32_t)isofs;
-    iso9660_vfs_node->inode = (uint32_t)isofs->pvd->root_directory.location_lba_lsb;
-    iso9660_vfs_node->length = (uint32_t)isofs->pvd->root_directory.size_lsb;
-    iso9660_vfs_node->flags = FS_DIRECTORY;
-    VfsMount(mount_point,iso9660_vfs_node);
+    FsNode * node = kmalloc(sizeof(FsNode));
+    strcpy(node->name,"cdrom");
+    node->impl = (uint32_t)isofs;
+    node->inode = (uint32_t)isofs->pvd->root_directory.location_lba_lsb;
+    node->length = (uint32_t)isofs->pvd->root_directory.size_lsb;
+    node->flags |= FS_DIRECTORY;
+    node->flags |= FS_MOUNTPOINT;
+    node->open = Open;
+    node->close = Close;
+    node->read = Read;
+    node->write = Write;
+    node->finddir = FindDir;
+    node->readdir = ReadDir;
+
+    VfsMount(mount_point,node);
 }

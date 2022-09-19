@@ -8,6 +8,7 @@
 
 gtree_t *fs_tree = NULL;
 
+VfsFileSystem * registerdFileSystems[10];
 
 static struct DirEntry *vfs_readdir(FsNode *node, uint32_t index)
 {
@@ -35,8 +36,36 @@ static struct FsNode *vfs_finddir(FsNode *node, char *name)
 
     return NULL;
 }
+void VfsRegisterFileSystem(VfsFileSystem *filesystem){
+    if(!filesystem || !filesystem->mount || filesystem->name[0] == 0x0)
+    {
+        return;
+    }
 
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        if(registerdFileSystems[i]){
+            continue;
+        }
 
+        registerdFileSystems[i] = filesystem;
+        break;
+    }
+}
+void VfsMountFs(char *path,char *mountpoint,char *fsname){
+    VfsFileSystem * fs = NULL;
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        if(registerdFileSystems[i] && strcmp(registerdFileSystems[i]->name,fsname)==0){
+            fs = registerdFileSystems[i];
+            break;
+        }
+    }
+
+    if(fs){
+        fs->mount(path,mountpoint);
+    }
+}
 void VfsMount(char *path,FsNode *node){
     if(path[0] != '/'){
         //Currently we don't support Relative Path
@@ -44,26 +73,73 @@ void VfsMount(char *path,FsNode *node){
     }
 
     gtree_node_t *token_node = fs_tree->root;
-    FsNode *token_fs = (FsNode *)fs_tree->root->value;
 
     char *filepath = path+1;
     char *token = NULL;
 
     while ((token = strsep(&filepath,"/")))
     {
-        if(token == NULL || strcmp(token,"") == 0){
+        if(filepath == NULL || strcmp(filepath,"") == 0){
             gtree_create_child(token_node,(uint32_t)node);
             return;
         }
 
         // TODO FIX
         //token_node = ((FsNode *)token_node)->finddir((FsNode *)token_node->value,token);
-        
+        foreach_t(item,token_node){
+            FsNode * snode = (FsNode *)item->value;
+            if(strcmp(snode->name,token) == 0){
+                token_node = item;
+                break;
+            }
+
+            if(!item->next_subling){
+                token_node = NULL;
+            }
+        }
+
         if(!token_node){
             log_debug("Error parent directory not mounted");
             return;
         }
     }
+}
+FsNode *VfsGetMountpoint(char *path){
+    if(path[0] != '/'){
+        //Currently we don't support Relative Path
+        return NULL;    
+    }
+
+    char *filepath = path+1;
+    char *token = NULL;
+    gtree_node_t *token_node = fs_tree->root;
+
+    while ((token = strsep(&filepath,"/")))
+    {
+        if(token == NULL || strcmp(token,"") == 0){
+            return (FsNode *)token_node->value;
+        }
+
+        foreach_t(item,token_node){
+            FsNode * snode = (FsNode *)item->value;
+            if(strcmp(snode->name,token) == 0){
+                token_node = item;
+                break;
+            }
+
+            if(!item->next_subling){
+                token_node = NULL;
+            }
+        }
+
+        if(!token_node){
+            log_debug("Error parent directory not mounted");
+            return NULL;
+        }
+    }
+
+    return token_node?(FsNode *)token_node->value:NULL;
+
 }
 void VfsInstall(){
     uint32_t inode = 0;
@@ -102,4 +178,22 @@ void VfsInstall(){
     fs_tmp->readdir = vfs_readdir;
     fs_tmp->inode = inode++;
     gtree_create_child(fs_tree->root,(uint32_t)fs_tmp);
+}
+
+char tabs[50];
+void print_hierarchy(gtree_node_t * node,int depth){
+  if(depth == 0){
+    tabs[0] = 0;
+  }
+  for (int i = 0; i < depth; i++)
+  {
+    tabs[i]='\t';
+    tabs[i+1]=0x0;
+  }
+  FsNode *entry = (FsNode *)node->value;
+  
+  log_trace("%s--| %s",tabs, entry->name);
+}
+void print_h(){
+    gtree_descendant_exec(fs_tree->root,print_hierarchy,0);
 }
