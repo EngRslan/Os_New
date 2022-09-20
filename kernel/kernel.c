@@ -122,6 +122,16 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("Installing ISO9660 FileSystem");
   iso9660_install();
   VfsMountFs("/dev/hda","/mnt/cdrom",ISO9660_FILESYSTEM_NAME);
+  FsNode *node = VfsGetMountpoint("/mnt/cdrom");
+  int i = 0;
+  DirEntry *dir = NULL;
+  FsOpen(node,1,0);
+  while ((dir = FsReadDir(node,i)))
+  {
+    log_debug("FileFound: %s",dir->name);
+    i++;
+  }
+  FsClose(node);
   print_h();
   log_information("ISO9660 FileSystem installed successfully");
   char date[50];

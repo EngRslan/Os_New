@@ -66,7 +66,12 @@ void VfsMountFs(char *path,char *mountpoint,char *fsname){
         fs->mount(path,mountpoint);
     }
 }
-void VfsMount(char *path,FsNode *node){
+void VfsMount(char *cpath,FsNode *node){
+    char *path = kmalloc(strlen(cpath)+1);
+    strcpy(path,cpath);
+    path[strlen(cpath)] = 0;
+
+
     if(path[0] != '/'){
         //Currently we don't support Relative Path
         return;    
@@ -81,6 +86,7 @@ void VfsMount(char *path,FsNode *node){
     {
         if(filepath == NULL || strcmp(filepath,"") == 0){
             gtree_create_child(token_node,(uint32_t)node);
+            kfree(path);
             return;
         }
 
@@ -100,11 +106,19 @@ void VfsMount(char *path,FsNode *node){
 
         if(!token_node){
             log_debug("Error parent directory not mounted");
+            kfree(path);
             return;
         }
     }
+
+    kfree(path);
+
 }
-FsNode *VfsGetMountpoint(char *path){
+FsNode *VfsGetMountpoint(char *cpath){
+    char *path = kmalloc(strlen(cpath)+1);
+    strcpy(path,cpath);
+    path[strlen(cpath)] = 0;
+
     if(path[0] != '/'){
         //Currently we don't support Relative Path
         return NULL;    
@@ -117,6 +131,7 @@ FsNode *VfsGetMountpoint(char *path){
     while ((token = strsep(&filepath,"/")))
     {
         if(token == NULL || strcmp(token,"") == 0){
+            kfree(path);
             return (FsNode *)token_node->value;
         }
 
@@ -134,10 +149,12 @@ FsNode *VfsGetMountpoint(char *path){
 
         if(!token_node){
             log_debug("Error parent directory not mounted");
+            kfree(path);
             return NULL;
         }
     }
 
+    kfree(path);
     return token_node?(FsNode *)token_node->value:NULL;
 
 }

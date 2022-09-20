@@ -5,5 +5,4 @@
 
 
 void iso9660_install();
-void mount(char *device, char* mount_point);
 #endif

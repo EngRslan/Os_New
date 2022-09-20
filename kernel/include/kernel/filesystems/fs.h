@@ -37,6 +37,7 @@ typedef struct FsNode{
     uint32_t inode;
     uint32_t length;
     uint32_t impl;
+    uint8_t *buffer;
 
     ReadCallback read;
     WriteCallback write;

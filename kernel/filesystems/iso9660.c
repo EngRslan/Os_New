@@ -1,8 +1,12 @@
 #include <kernel/filesystems/iso9660.h>
 #include <kernel/filesystems/vfs.h>
 #include <kernel/mem/kheap.h>
+#include <kernel/bits.h>
 #include <string.h>
-typedef struct
+#include <logger.h>
+#define foreach_entry(entry,buffer)for(Iso9660Directory *entry = (Iso9660Directory *)buffer;entry->length > 0;(Iso9660Directory *)((uint8_t *)entry + entry->length))
+void mount(char *device, char* mount_point);
+typedef struct Iso9660DirectoryDateTime
 {
     uint8_t years;
     uint8_t month;
@@ -11,9 +15,9 @@ typedef struct
     uint8_t minute;
     uint8_t second;
     uint8_t offset;
-} __attribute__((packed)) directory_datetime_t ;
+} __attribute__((packed)) Iso9660DirectoryDateTime ;
 
-typedef struct
+typedef struct Iso9660Directory
 {
     uint8_t     length                        ;
     uint8_t     attribute                     ;
@@ -21,15 +25,24 @@ typedef struct
     uint32_t    location_lba_msb             ;
     uint32_t    size_lsb                     ;
     uint32_t    size_msb                     ;
-    directory_datetime_t creation_date     ;  
-    uint8_t     flags                         ;
+    Iso9660DirectoryDateTime creation_date     ;  
+    struct flags
+    {
+        uint8_t hidden          :1;
+        uint8_t directory       :1;
+        uint8_t associatedFile  :1;
+        uint8_t fileFormatExt   :1;
+        uint8_t permissionExt   :1;
+        uint8_t _               :2;
+        uint8_t notFinalDir     :1;
+    };
     uint8_t     interleaved_unit_size         ;
     uint8_t     interleave_gap_size           ;
     uint16_t    volume_sequence_number_lsb   ;
     uint16_t    volume_sequence_number_msb   ;
     uint8_t     length_file_identifier        ;
     uint8_t     file_identifier[]               ;
-} __attribute__((packed)) directory_t;
+} __attribute__((packed)) Iso9660Directory;
 
 typedef struct {
     uint8_t     type_code                              ;
@@ -54,8 +67,30 @@ typedef struct {
     uint32_t    optional_path_table_location_lsb      ;
     uint32_t    path_table_location_msb               ;
     uint32_t    optional_path_table_location_msb      ;
-    directory_t root_directory                   ;
+    Iso9660Directory root_directory                   ;
 } __attribute__((packed)) PVD_t;
+
+void normalizeFilename(char *name,char *file_identifier,uint8_t file_identifier_length){
+    if (file_identifier[0] == 0x0)
+    {
+        strcpy(name,".");
+        
+    }else if(file_identifier[0] == 0x01){
+        strcpy(name,"..");
+    }else{
+        // memcpy(direntry.name,dir->file_identifier,dir->length_file_identifier);
+        char *s = file_identifier;
+        uint32_t i = 0;
+        while (*s && i <= file_identifier_length && *s != ';')
+        {
+            name[i] = *s;
+            i++;
+            s++;
+        }
+        
+        name[i]=0x0;
+    }
+}
 
 typedef struct Iso9660
 {
@@ -80,16 +115,88 @@ uint32_t Read(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
 uint32_t Write(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
 
 }
-void Open(FsNode *node){
+void mountDirectory(FsNode *node){
 
+    foreach_entry(entry,node->buffer){
+        char filename[128]
+        // log_debug("mounter dir %s",)
+    }
+    
+    
+
+}
+void Open(FsNode *node){
+    if(node->buffer){
+        return;
+    }
+    Iso9660 *fs = (Iso9660 *)node->impl;
+    uint8_t *buffer = (uint8_t *)kmalloc(node->length);
+    fs->device->read(fs->device,node->inode * fs->sector_size,node->length,buffer);
+    node->buffer = buffer;
+    
+    if(BITREAD(node->flags,FS_DIRECTORY-1)){
+        mountDirectory(node);
+    }
 }
 void Close(FsNode *node){
+    if(!node->buffer){
+        return;
+    }
 
+    kfree(node->buffer);
+    node->buffer == NULL;
 }
 DirEntry *ReadDir(FsNode *node,uint32_t index){
+    if(!node->buffer){
+        return NULL;
+    }
+    Iso9660Directory *dir = (Iso9660Directory *)node->buffer;
+    if(dir->length <= 0)
+    {
+        return NULL;
+    }
+    uint32_t i = 0;
+    while (i < index)
+    {
+        dir = (Iso9660Directory *)((uint8_t *)dir + dir->length);
+        i++;
+    }
 
+    if(dir->length <= 0)
+    {
+        return NULL;
+    }
+
+    static DirEntry direntry;
+    direntry.ino = index;
+    normalizeFilename(direntry.name,dir->file_identifier,dir->length_file_identifier);
+    return &direntry;
 }
 FsNode *FindDir(FsNode *node,char *name){
+    if(!node->buffer){
+        return NULL;
+    }
+    Iso9660Directory *dir = (Iso9660Directory *)node->buffer;
+
+    if(dir->length <= 0)
+    {
+        return NULL;
+    }
+    
+    char _normalizedFilename[128];
+    normalizeFilename(_normalizedFilename,dir->file_identifier,dir->length_file_identifier);
+
+    while (strcmp(name,_normalizedFilename) != 0)
+    {
+        dir = (Iso9660Directory *)((uint8_t *)dir + dir->length);
+        normalizeFilename(_normalizedFilename,dir->file_identifier,dir->length_file_identifier);
+    }
+
+    if(dir->length <= 0)
+    {
+        return NULL;
+    }
+
 
 }
 
@@ -115,4 +222,5 @@ void mount(char *device, char* mount_point){
     node->readdir = ReadDir;
 
     VfsMount(mount_point,node);
+
 }

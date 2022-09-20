@@ -39,14 +39,14 @@ void FsClose(FsNode *node){
     }
 }
 struct DirEntry *FsReadDir(FsNode *node,uint32_t index){
-    if(node->readdir && BITREAD(node->flags,FS_DIRECTORY)){
+    if(node->readdir && BITREAD(node->flags,(FS_DIRECTORY-1))){
         return node->readdir(node,index);
     }else{
         return NULL;
     }
 }
 struct FsNode *FsFindDir(FsNode *node,char *name){
-    if(node->readdir && BITREAD(node->flags,FS_DIRECTORY)){
+    if(node->readdir && BITREAD(node->flags,(FS_DIRECTORY-1))){
         return node->finddir(node,name);
     }else{
         return NULL;
