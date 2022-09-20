@@ -12,6 +12,7 @@ typedef struct VfsFileSystem
 void VfsRegisterFileSystem(VfsFileSystem *filesystem);
 void VfsInstall();
 void VfsMount(char *path,FsNode *node);
+void VfsMountChild(FsNode *parent,FsNode *child);
 void VfsMountFs(char *path,char *mountpoint,char *fsname);
 FsNode *VfsGetMountpoint(char *path);
 

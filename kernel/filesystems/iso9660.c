@@ -4,7 +4,7 @@
 #include <kernel/bits.h>
 #include <string.h>
 #include <logger.h>
-#define foreach_entry(entry,buffer)for(Iso9660Directory *entry = (Iso9660Directory *)buffer;entry->length > 0;(Iso9660Directory *)((uint8_t *)entry + entry->length))
+#define foreach_entry(entry,buffer)for(Iso9660Directory *entry = (Iso9660Directory *)buffer;entry->length > 0;entry=(Iso9660Directory *)((uint8_t *)entry + entry->length))
 void mount(char *device, char* mount_point);
 typedef struct Iso9660DirectoryDateTime
 {
@@ -26,15 +26,19 @@ typedef struct Iso9660Directory
     uint32_t    size_lsb                     ;
     uint32_t    size_msb                     ;
     Iso9660DirectoryDateTime creation_date     ;  
-    struct flags
+    union
     {
-        uint8_t hidden          :1;
-        uint8_t directory       :1;
-        uint8_t associatedFile  :1;
-        uint8_t fileFormatExt   :1;
-        uint8_t permissionExt   :1;
-        uint8_t _               :2;
-        uint8_t notFinalDir     :1;
+        uint8_t flagsbits;
+        struct
+        {
+            uint8_t hidden          :1;
+            uint8_t directory       :1;
+            uint8_t associatedFile  :1;
+            uint8_t fileFormatExt   :1;
+            uint8_t permissionExt   :1;
+            uint8_t _               :2;
+            uint8_t notFinalDir     :1;
+        };
     };
     uint8_t     interleaved_unit_size         ;
     uint8_t     interleave_gap_size           ;
@@ -115,11 +119,29 @@ uint32_t Read(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
 uint32_t Write(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
 
 }
-void mountDirectory(FsNode *node){
+void mountDirectory(FsNode *node)
+{
 
-    foreach_entry(entry,node->buffer){
-        char filename[128]
-        // log_debug("mounter dir %s",)
+    foreach_entry(entry,node->buffer)
+    {
+        // char filename[128];
+        // normalizeFilename(filename,entry->file_identifier,entry->length_file_identifier);
+        // log_debug("mounter dir %s",filename);
+
+        FsNode *node = (FsNode *)kmalloc(sizeof(FsNode));
+        normalizeFilename(node->name,entry->file_identifier,entry->length_file_identifier);
+        node->length = entry->size_lsb;
+        node->inode = entry->location_lba_lsb;
+        node->impl = node->impl;
+        node->buffer = NULL;
+        node->flags |= entry->directory?FS_DIRECTORY:FS_FILE;
+        node->open = Open;
+        node->close = Close;
+        node->read = Read;
+        node->write = Write;
+        node->finddir = FindDir;
+        node->readdir = Read;
+
     }
     
     

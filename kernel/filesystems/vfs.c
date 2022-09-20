@@ -66,6 +66,9 @@ void VfsMountFs(char *path,char *mountpoint,char *fsname){
         fs->mount(path,mountpoint);
     }
 }
+void VfsMountChild(FsNode *parent,FsNode *child){
+    
+}
 void VfsMount(char *cpath,FsNode *node){
     char *path = kmalloc(strlen(cpath)+1);
     strcpy(path,cpath);
