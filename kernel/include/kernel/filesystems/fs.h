@@ -46,6 +46,11 @@ typedef struct FsNode{
     ReadDirCallback readdir;
     FindDirCallback finddir;
     struct FsNode *ptr;
+
+    //structure
+    struct FsNode *child;
+    struct FsNode *parent;
+    struct FsNode *next;
 }FsNode;
 
 extern FsNode *fs_root;

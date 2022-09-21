@@ -22,7 +22,7 @@ CSRC= kernel.c \
 	logging/logger.c \
 	$(FS)/fs.c $(FS)/vfs.c $(FS)/iso9660.c\
   	$(CLIB_DIR)/stdio/scanf.c $(CLIB_DIR)/stdio/printf.c $(CLIB_DIR)/stdlib/itoa.c $(CLIB_DIR)/string/string.c $(CLIB_DIR)/ctype/ctype.c \
-	$(DATA_STRUCT_DIR)/list.c $(DATA_STRUCT_DIR)/tree.c $(DATA_STRUCT_DIR)/gtree.c
+	$(DATA_STRUCT_DIR)/list.c $(DATA_STRUCT_DIR)/tree.c $(DATA_STRUCT_DIR)/gtree.c $(DATA_STRUCT_DIR)/stack.c
 
 SSRC= kernel_entry.asm $(IDT_DIR)/idt_exceptions.asm $(IRQ_DIR)/idt_irq.asm
 OBJS= $(CSRC:.c=.o) $(SSRC:.asm=.o)

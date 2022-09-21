@@ -2,23 +2,26 @@
 #include <kernel/filesystems/fs.h>
 #include <kernel/datastruct/gtree.h>
 #include <kernel/mem/kheap.h>
+#include <kernel/bits.h>
+#include <kernel/datastruct/stack.h>
 #include <stddef.h>
 #include <logger.h>
 #include <string.h>
 
-gtree_t *fs_tree = NULL;
+#define foreach_sub(item,cwn)for (FsNode * item = cwn->child; item != NULL;item = item->next)
 
+// gtree_t *fs_tree = NULL;
+FsNode *root;
 VfsFileSystem * registerdFileSystems[10];
 
 static struct DirEntry *vfs_readdir(FsNode *node, uint32_t index)
 {
     static DirEntry direntry ;
-    foreach_t(item,fs_tree->root){
-        FsNode *fs_node = (FsNode *)item->value;
-        if(fs_node->inode == index){
-            strcpy(direntry.name,fs_node->name);
+    foreach_sub(item,node){
+        if(item->inode == index){
+            strcpy(direntry.name,item->name);
             direntry.name[strlen(direntry.name)] = 0;
-            direntry.ino = fs_node->inode;
+            direntry.ino = item->inode;
             return &direntry;
         }
     }
@@ -27,10 +30,9 @@ static struct DirEntry *vfs_readdir(FsNode *node, uint32_t index)
 }
 static struct FsNode *vfs_finddir(FsNode *node, char *name)
 {
-    foreach_t(item,fs_tree->root){
-        FsNode *fs_node = (FsNode *)item->value;
-        if(strcmp(fs_node->name,name) == 0){
-            return fs_node;
+    foreach_sub(item,node){
+        if(strcmp(item->name,name) == 0){
+            return item;
         }
     }
 
@@ -66,9 +68,6 @@ void VfsMountFs(char *path,char *mountpoint,char *fsname){
         fs->mount(path,mountpoint);
     }
 }
-void VfsMountChild(FsNode *parent,FsNode *child){
-    
-}
 void VfsMount(char *cpath,FsNode *node){
     char *path = kmalloc(strlen(cpath)+1);
     strcpy(path,cpath);
@@ -80,37 +79,38 @@ void VfsMount(char *cpath,FsNode *node){
         return;    
     }
 
-    gtree_node_t *token_node = fs_tree->root;
+    // gtree_node_t *token_node = fs_tree->root;
 
+    FsNode *cwn = root;
     char *filepath = path+1;
     char *token = NULL;
 
     while ((token = strsep(&filepath,"/")))
     {
         if(filepath == NULL || strcmp(filepath,"") == 0){
-            gtree_create_child(token_node,(uint32_t)node);
-            kfree(path);
-            return;
+            // gtree_create_child(token_node,(uint32_t)node);
+            vfsLinkChild(cwn,node);
+            break;
         }
 
-        // TODO FIX
-        //token_node = ((FsNode *)token_node)->finddir((FsNode *)token_node->value,token);
-        foreach_t(item,token_node){
-            FsNode * snode = (FsNode *)item->value;
-            if(strcmp(snode->name,token) == 0){
-                token_node = item;
-                break;
-            }
+        cwn = vfs_finddir(cwn,token);
+        // // TODO FIX
+        // //token_node = ((FsNode *)token_node)->finddir((FsNode *)token_node->value,token);
+        // foreach_t(item,token_node){
+        //     FsNode * snode = (FsNode *)item->value;
+        //     if(strcmp(snode->name,token) == 0){
+        //         token_node = item;
+        //         break;
+        //     }
 
-            if(!item->next_subling){
-                token_node = NULL;
-            }
-        }
+        //     if(!item->next_subling){
+        //         token_node = NULL;
+        //     }
+        // }
 
-        if(!token_node){
-            log_debug("Error parent directory not mounted");
-            kfree(path);
-            return;
+        if(!cwn){
+            log_warning("Vfs Mount didn't complete directory didn't found");
+            break;
         }
     }
 
@@ -129,48 +129,46 @@ FsNode *VfsGetMountpoint(char *cpath){
 
     char *filepath = path+1;
     char *token = NULL;
-    gtree_node_t *token_node = fs_tree->root;
-
+    // gtree_node_t *token_node = fs_tree->root;
+    FsNode *cwn = root;
     while ((token = strsep(&filepath,"/")))
     {
         if(token == NULL || strcmp(token,"") == 0){
             kfree(path);
-            return (FsNode *)token_node->value;
+            return cwn;
         }
 
-        foreach_t(item,token_node){
-            FsNode * snode = (FsNode *)item->value;
-            if(strcmp(snode->name,token) == 0){
-                token_node = item;
-                break;
-            }
+        cwn = vfs_finddir(cwn,token);
 
-            if(!item->next_subling){
-                token_node = NULL;
-            }
-        }
-
-        if(!token_node){
-            log_debug("Error parent directory not mounted");
-            kfree(path);
-            return NULL;
+        if(!cwn){
+            break;
         }
     }
 
     kfree(path);
-    return token_node?(FsNode *)token_node->value:NULL;
+    return cwn;
 
+}
+void vfsLinkChild(FsNode *parent, FsNode *child){
+    if(parent == NULL || child == NULL){
+        return;
+    }
+
+    child->parent = parent;
+    child->next = parent->child;
+    parent->child = child;
 }
 void VfsInstall(){
     uint32_t inode = 0;
 
-    FsNode * fs_root = (FsNode *)kmalloc(sizeof(FsNode));
-    memset(fs_root,0,sizeof(fs_root));
-    strcpy(fs_root->name,"/");
-    fs_root->flags |= FS_DIRECTORY;
-    fs_root->finddir = vfs_finddir;
-    fs_root->readdir = vfs_readdir;
-    fs_tree = gtree_create((uint32_t)fs_root);
+    root = (FsNode *)kmalloc(sizeof(FsNode));
+    memset(root,0,sizeof(root));
+    strcpy(root->name,"/");
+    root->flags |= FS_DIRECTORY;
+    root->finddir = vfs_finddir;
+    root->readdir = vfs_readdir;
+    
+    // fs_tree = gtree_create((uint32_t)fs_root);
 
     FsNode * fs_dev = (FsNode *)kmalloc(sizeof(FsNode));
     memset(fs_dev,0,sizeof(FsNode));
@@ -179,7 +177,8 @@ void VfsInstall(){
     fs_dev->finddir = vfs_finddir;
     fs_dev->readdir = vfs_readdir;
     fs_dev->inode = inode++;
-    gtree_create_child(fs_tree->root,(uint32_t)fs_dev);
+    vfsLinkChild(root,fs_dev);
+    // gtree_create_child(fs_tree->root,(uint32_t)fs_dev);
 
     FsNode * fs_mnt = (FsNode *)kmalloc(sizeof(FsNode));
     memset(fs_mnt,0,sizeof(FsNode));
@@ -188,7 +187,8 @@ void VfsInstall(){
     fs_mnt->finddir = vfs_finddir;
     fs_mnt->readdir = vfs_readdir;
     fs_mnt->inode = inode++;
-    gtree_create_child(fs_tree->root,(uint32_t)fs_mnt);
+    vfsLinkChild(root,fs_mnt);
+    // gtree_create_child(fs_tree->root,(uint32_t)fs_mnt);
 
     FsNode * fs_tmp = (FsNode *)kmalloc(sizeof(FsNode));
     memset(fs_tmp,0,sizeof(FsNode));
@@ -197,7 +197,8 @@ void VfsInstall(){
     fs_tmp->finddir = vfs_finddir;
     fs_tmp->readdir = vfs_readdir;
     fs_tmp->inode = inode++;
-    gtree_create_child(fs_tree->root,(uint32_t)fs_tmp);
+    vfsLinkChild(root,fs_tmp);
+    // gtree_create_child(fs_tree->root,(uint32_t)fs_tmp);
 }
 
 char tabs[50];
@@ -214,6 +215,104 @@ void print_hierarchy(gtree_node_t * node,int depth){
   
   log_trace("%s--| %s",tabs, entry->name);
 }
+// void print_h(){
+//     // gtree_descendant_exec(fs_tree->root,print_hierarchy,0);
+//     FsNode *node = root;
+//     int depth = 0;
+//     Stack *stack = StackCreate(50);
+//     while (node)
+//     {
+//         for (int i = 0; i < depth; i++)
+//         {
+//             tabs[i]='\t';
+//             tabs[i+1]=0x0;
+//         }
+//         log_trace("%s--| %s",tabs, node->name);
+
+//         if(node->child){
+//             StackPush(stack, (int)node);
+//             node = node->child;
+//             depth ++;
+//             continue;
+//         }else if(node->next){
+//             node = node->next;
+//             continue;
+//         }
+
+//         node = (FsNode *)StackPop(stack);
+//         node = node->next;
+//         depth--;
+//         if(!node && !StackIsEmpty(stack)){
+//             node = (FsNode *)StackPop(stack);
+//             if(node == root){
+//                 break;
+//             }
+//         }
+//     }
+
+//     StackDestroy(stack);
+// }
+
+char *print_flags(FsNode *node){
+    switch (node->flags)
+    {
+    case FS_FILE:
+        return "f";
+    case FS_DIRECTORY | FS_MOUNTPOINT:
+        return "md";
+    case FS_DIRECTORY:
+        return "d";
+    case FS_BLOCKDEVICE:
+        return "db";
+    case FS_CHARDEVICE:
+        return "dc";
+    default:
+        return "Un";
+    }
+}
 void print_h(){
-    gtree_descendant_exec(fs_tree->root,print_hierarchy,0);
+    // gtree_descendant_exec(fs_tree->root,print_hierarchy,0);
+    FsNode *node = root;
+    int depth = 0;
+    log_trace("--| %s", node->name);
+
+    while (node)
+    {
+        if(node->child)
+        {
+            node = node->child;
+            depth ++;
+        }
+        else if(node->next)
+        {
+            node = node->next;
+        }
+        else
+        {
+            // while node has parent and no parent dosn't has subling
+            while (node->parent && !node->parent->next)
+            {
+                node = node->parent;
+                depth--;
+            }
+
+            if(!node->parent){
+                return;
+            }
+            
+            node = node->parent->next;
+            depth --;
+        }
+        
+        if(node){
+            for (int i = 0; i < depth; i++)
+            {
+                tabs[i]='\t';
+                tabs[i+1]=0x0;
+            }
+            log_trace("%s--| %s(-%s)",tabs, node->name,print_flags(node));
+        }
+        
+    }
+
 }

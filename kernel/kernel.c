@@ -126,13 +126,9 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   int i = 0;
   DirEntry *dir = NULL;
   FsOpen(node,1,0);
-  while ((dir = FsReadDir(node,i)))
-  {
-    log_debug("FileFound: %s",dir->name);
-    i++;
-  }
-  FsClose(node);
   print_h();
+  FsClose(node);
+ 
   log_information("ISO9660 FileSystem installed successfully");
   char date[50];
   str_date(date);

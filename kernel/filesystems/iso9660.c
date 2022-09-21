@@ -4,8 +4,37 @@
 #include <kernel/bits.h>
 #include <string.h>
 #include <logger.h>
+#include <stdbool.h>
 #define foreach_entry(entry,buffer)for(Iso9660Directory *entry = (Iso9660Directory *)buffer;entry->length > 0;entry=(Iso9660Directory *)((uint8_t *)entry + entry->length))
+typedef struct Iso9660Susp
+{
+    char signature[2];
+    uint8_t length;
+    uint8_t version;
+}Iso9660Susp;
+
+typedef union Iso9660RripNm
+{
+    uint8_t flagbits;
+    struct 
+    {
+        uint8_t isContinue :1;
+        uint8_t isCurrent :1;
+        uint8_t isParent :1;
+        uint8_t reserved :5;
+    };
+    
+}Iso9660RripNm;
+
 void mount(char *device, char* mount_point);
+void Open(FsNode *node);
+uint32_t Read(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer);
+uint32_t Write(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer);
+void Open(FsNode *node);
+void Close(FsNode *node);
+DirEntry *ReadDir(FsNode *node,uint32_t index);
+FsNode *FindDir(FsNode *node,char *name);
+
 typedef struct Iso9660DirectoryDateTime
 {
     uint8_t years;
@@ -16,7 +45,6 @@ typedef struct Iso9660DirectoryDateTime
     uint8_t second;
     uint8_t offset;
 } __attribute__((packed)) Iso9660DirectoryDateTime ;
-
 typedef struct Iso9660Directory
 {
     uint8_t     length                        ;
@@ -47,7 +75,6 @@ typedef struct Iso9660Directory
     uint8_t     length_file_identifier        ;
     uint8_t     file_identifier[]               ;
 } __attribute__((packed)) Iso9660Directory;
-
 typedef struct {
     uint8_t     type_code                              ;
     uint8_t     standard_identifier[5]                 ;
@@ -71,8 +98,14 @@ typedef struct {
     uint32_t    optional_path_table_location_lsb      ;
     uint32_t    path_table_location_msb               ;
     uint32_t    optional_path_table_location_msb      ;
-    Iso9660Directory root_directory                   ;
+    struct Iso9660Directory root_directory                   ;
 } __attribute__((packed)) PVD_t;
+typedef struct Iso9660
+{
+    uint32_t sector_size;
+    PVD_t * pvd;
+    FsNode * device;
+} Iso9660;
 
 void normalizeFilename(char *name,char *file_identifier,uint8_t file_identifier_length){
     if (file_identifier[0] == 0x0)
@@ -95,14 +128,6 @@ void normalizeFilename(char *name,char *file_identifier,uint8_t file_identifier_
         name[i]=0x0;
     }
 }
-
-typedef struct Iso9660
-{
-    uint32_t sector_size;
-    PVD_t * pvd;
-    FsNode * device;
-} Iso9660;
-
 void read_disk_block(Iso9660 * fs,uint32_t block,char * buffer){
     FsRead(fs->device,fs->sector_size * block,fs->sector_size,(uint8_t *)buffer);
 }
@@ -112,24 +137,42 @@ void iso9660_install(){
     fs->mount = mount;
     VfsRegisterFileSystem(fs);
 }
-
 uint32_t Read(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
 
 }
 uint32_t Write(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
 
 }
-void mountDirectory(FsNode *node)
+void mountDirectory(FsNode *parent)
 {
 
-    foreach_entry(entry,node->buffer)
+    foreach_entry(entry,parent->buffer)
     {
         // char filename[128];
         // normalizeFilename(filename,entry->file_identifier,entry->length_file_identifier);
         // log_debug("mounter dir %s",filename);
 
         FsNode *node = (FsNode *)kmalloc(sizeof(FsNode));
-        normalizeFilename(node->name,entry->file_identifier,entry->length_file_identifier);
+        Iso9660Susp *susp = (Iso9660Susp *)(entry->file_identifier + entry->length_file_identifier);
+        while (true)
+        {
+            if(susp->signature == 0){
+                normalizeFilename(node->name,entry->file_identifier,entry->length_file_identifier);
+                break;
+            }
+            if(susp->signature[0] != 'N' && susp->signature[1] != 'M'){
+                susp = (Iso9660Susp *)((void *)susp + susp->length);
+                continue;
+            }
+
+            Iso9660RripNm *nmflags  = susp+1;
+            //TODO check continu flag
+            memcpy(node->name,(void *)susp + 6,susp->length - 6);
+            break;
+
+        }
+        
+
         node->length = entry->size_lsb;
         node->inode = entry->location_lba_lsb;
         node->impl = node->impl;
@@ -141,7 +184,7 @@ void mountDirectory(FsNode *node)
         node->write = Write;
         node->finddir = FindDir;
         node->readdir = Read;
-
+        vfsLinkChild(parent,node);
     }
     
     
@@ -221,7 +264,6 @@ FsNode *FindDir(FsNode *node,char *name){
 
 
 }
-
 void mount(char *device, char* mount_point){
     Iso9660 * isofs = (Iso9660 *)kmalloc(sizeof(Iso9660));
     isofs->device = VfsGetMountpoint(device);
