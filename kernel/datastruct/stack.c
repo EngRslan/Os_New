@@ -27,14 +27,14 @@ void StackPush(Stack *stack, int value){
 int StackPop(Stack *stack){
     if(StackIsEmpty(stack)){
         log_warning("Stack Empty");
-        return;
+        return 0;
     }
     int v = stack->buffer[++stack->pointer];
     stack->buffer[stack->pointer] = 0;
     return v;
 }
 bool StackIsEmpty(Stack *stack){
-    return stack->pointer == stack->size;
+    return stack->pointer == (int)stack->size;
 }
 bool StackIsFull(Stack *stack){
     return stack->pointer == 0;

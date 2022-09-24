@@ -138,44 +138,67 @@ void iso9660_install(){
     VfsRegisterFileSystem(fs);
 }
 uint32_t Read(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
+    if(node->flags != FS_FILE){
+        return 1;
+    }
 
+    if(offset + size > node->length){
+        return 2;
+    }
+
+    memcpy(buffer,node->buffer+offset,size);
+    return 0;
 }
 uint32_t Write(FsNode *node,uint32_t offset,uint32_t size,uint8_t *buffer){
-
+    return 0;
 }
+
 void mountDirectory(FsNode *parent)
 {
-
-    foreach_entry(entry,parent->buffer)
+    Iso9660 *fs = (Iso9660 *)parent->impl;
+    int totalsectors = parent->length/fs->sector_size;
+    int cwsectors = 1;
+    // for(
+    //     Iso9660Directory *entry = (Iso9660Directory *)parent->buffer;
+    //     true;
+    //     entry=(Iso9660Directory *)((uint8_t *)entry + entry->length))
+    // foreach_entry(entry,parent->buffer)
+    Iso9660Directory *entry = (Iso9660Directory *)parent->buffer;
+    while (entry)
     {
         // char filename[128];
         // normalizeFilename(filename,entry->file_identifier,entry->length_file_identifier);
         // log_debug("mounter dir %s",filename);
-
+        
+        if(entry->file_identifier[0]=='\0' || entry->file_identifier[0]=='\1'){
+            entry=(Iso9660Directory *)((uint8_t *)entry + entry->length);
+            continue;
+        }
         FsNode *node = (FsNode *)kmalloc(sizeof(FsNode));
-        Iso9660Susp *susp = (Iso9660Susp *)(entry->file_identifier + entry->length_file_identifier);
-        while (true)
+        Iso9660Susp *susp = (Iso9660Susp *)(entry->file_identifier + entry->length_file_identifier+(entry->length_file_identifier % 2 == 0?1:0));
+        bool isFound=false;
+        while ((void *)susp+1 < (void *)entry+entry->length)
         {
-            if(susp->signature == 0){
-                normalizeFilename(node->name,entry->file_identifier,entry->length_file_identifier);
-                break;
-            }
+
             if(susp->signature[0] != 'N' && susp->signature[1] != 'M'){
                 susp = (Iso9660Susp *)((void *)susp + susp->length);
                 continue;
             }
 
-            Iso9660RripNm *nmflags  = susp+1;
+            Iso9660RripNm *nmflags  = (Iso9660RripNm *)(susp+1);
             //TODO check continu flag
-            memcpy(node->name,(void *)susp + 6,susp->length - 6);
+            memcpy(node->name,(void *)susp + 5,susp->length - 5);
+            isFound = true;
             break;
 
         }
         
-
+        if(!isFound){
+            normalizeFilename(node->name,(char *)entry->file_identifier,entry->length_file_identifier);
+        }
         node->length = entry->size_lsb;
         node->inode = entry->location_lba_lsb;
-        node->impl = node->impl;
+        node->impl = parent->impl;
         node->buffer = NULL;
         node->flags |= entry->directory?FS_DIRECTORY:FS_FILE;
         node->open = Open;
@@ -183,8 +206,24 @@ void mountDirectory(FsNode *parent)
         node->read = Read;
         node->write = Write;
         node->finddir = FindDir;
-        node->readdir = Read;
+        node->readdir = ReadDir;
         vfsLinkChild(parent,node);
+
+        entry=(Iso9660Directory *)((uint8_t *)entry + entry->length);
+        if(entry->length == 0 && cwsectors < totalsectors)
+        {
+            cwsectors ++;
+            entry=(Iso9660Directory *)(parent->buffer + ((cwsectors-1) * fs->sector_size));
+            continue;
+        }
+        else if(entry->length > 0)
+        {
+            continue;
+        }
+        else
+        {
+            break;
+        }
     }
     
     
@@ -209,7 +248,7 @@ void Close(FsNode *node){
     }
 
     kfree(node->buffer);
-    node->buffer == NULL;
+    node->buffer = NULL;
 }
 DirEntry *ReadDir(FsNode *node,uint32_t index){
     if(!node->buffer){
@@ -234,9 +273,10 @@ DirEntry *ReadDir(FsNode *node,uint32_t index){
 
     static DirEntry direntry;
     direntry.ino = index;
-    normalizeFilename(direntry.name,dir->file_identifier,dir->length_file_identifier);
+    normalizeFilename(direntry.name,(char *)dir->file_identifier,dir->length_file_identifier);
     return &direntry;
 }
+//TODO Don't forget to re write this function
 FsNode *FindDir(FsNode *node,char *name){
     if(!node->buffer){
         return NULL;
@@ -249,19 +289,19 @@ FsNode *FindDir(FsNode *node,char *name){
     }
     
     char _normalizedFilename[128];
-    normalizeFilename(_normalizedFilename,dir->file_identifier,dir->length_file_identifier);
+    normalizeFilename(_normalizedFilename,(char *)dir->file_identifier,dir->length_file_identifier);
 
     while (strcmp(name,_normalizedFilename) != 0)
     {
         dir = (Iso9660Directory *)((uint8_t *)dir + dir->length);
-        normalizeFilename(_normalizedFilename,dir->file_identifier,dir->length_file_identifier);
+        normalizeFilename(_normalizedFilename,(char *)dir->file_identifier,dir->length_file_identifier);
     }
 
     if(dir->length <= 0)
     {
         return NULL;
     }
-
+ return NULL;
 
 }
 void mount(char *device, char* mount_point){
@@ -286,5 +326,6 @@ void mount(char *device, char* mount_point){
     node->readdir = ReadDir;
 
     VfsMount(mount_point,node);
+    Open(node);
 
 }

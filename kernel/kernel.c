@@ -30,6 +30,7 @@
 #include <kernel/net/addr.h>
 #include <kernel/net/dhcp.h>
 #include <kernel/net/manager.h>
+#include <kernel/elf.h>
 
 void loadKernelMods();
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
@@ -122,13 +123,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("Installing ISO9660 FileSystem");
   iso9660_install();
   VfsMountFs("/dev/hda","/mnt/cdrom",ISO9660_FILESYSTEM_NAME);
-  FsNode *node = VfsGetMountpoint("/mnt/cdrom");
-  int i = 0;
-  DirEntry *dir = NULL;
-  FsOpen(node,1,0);
-  print_h();
-  FsClose(node);
- 
+
   log_information("ISO9660 FileSystem installed successfully");
   char date[50];
   str_date(date);
@@ -172,4 +167,15 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
 
 void loadKernelMods(){
   // file_open("/boot/testmod.so");
+  FsNode *node = VfsGetMountpoint("/mnt/cdrom/boot");
+  FsOpen(node,0,0);
+  node = VfsGetMountpoint("/mnt/cdrom/boot/kernel.elf");
+  FsOpen(node,0,0);
+  void *buff = kmalloc(node->length);
+  FsRead(node,0,node->length,buff);
+  ReadElf(buff);
+  // node = VfsGetMountpoint("/mnt/cdrom/boot/grub/i386-pc");
+  // FsOpen(node,0,0);
+  // print_h();
+  // FsClose(node);
 }

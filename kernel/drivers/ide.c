@@ -428,7 +428,7 @@ uint8_t ide_atapi_read(uint8_t drive,uint32_t lba, uint8_t numsectors,ptr_t buff
     atapi_packet[1] = 0;
     atapi_packet[2] = (lba >> 24) & 0xFF;
     atapi_packet[3] = (lba >> 16) & 0xFF;
-    atapi_packet[4] = (lba >> 18) & 0xFF;
+    atapi_packet[4] = (lba >> 8) & 0xFF;
     atapi_packet[5] = (lba >> 0) & 0xFF;
     atapi_packet[6] = 0 ;
     atapi_packet[7] = 0 ;

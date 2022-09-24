@@ -202,57 +202,6 @@ void VfsInstall(){
 }
 
 char tabs[50];
-void print_hierarchy(gtree_node_t * node,int depth){
-  if(depth == 0){
-    tabs[0] = 0;
-  }
-  for (int i = 0; i < depth; i++)
-  {
-    tabs[i]='\t';
-    tabs[i+1]=0x0;
-  }
-  FsNode *entry = (FsNode *)node->value;
-  
-  log_trace("%s--| %s",tabs, entry->name);
-}
-// void print_h(){
-//     // gtree_descendant_exec(fs_tree->root,print_hierarchy,0);
-//     FsNode *node = root;
-//     int depth = 0;
-//     Stack *stack = StackCreate(50);
-//     while (node)
-//     {
-//         for (int i = 0; i < depth; i++)
-//         {
-//             tabs[i]='\t';
-//             tabs[i+1]=0x0;
-//         }
-//         log_trace("%s--| %s",tabs, node->name);
-
-//         if(node->child){
-//             StackPush(stack, (int)node);
-//             node = node->child;
-//             depth ++;
-//             continue;
-//         }else if(node->next){
-//             node = node->next;
-//             continue;
-//         }
-
-//         node = (FsNode *)StackPop(stack);
-//         node = node->next;
-//         depth--;
-//         if(!node && !StackIsEmpty(stack)){
-//             node = (FsNode *)StackPop(stack);
-//             if(node == root){
-//                 break;
-//             }
-//         }
-//     }
-
-//     StackDestroy(stack);
-// }
-
 char *print_flags(FsNode *node){
     switch (node->flags)
     {
@@ -274,7 +223,7 @@ void print_h(){
     // gtree_descendant_exec(fs_tree->root,print_hierarchy,0);
     FsNode *node = root;
     int depth = 0;
-    log_trace("--| %s", node->name);
+    log_trace("|--> %s", node->name);
 
     while (node)
     {
@@ -307,10 +256,13 @@ void print_h(){
         if(node){
             for (int i = 0; i < depth; i++)
             {
-                tabs[i]='\t';
-                tabs[i+1]=0x0;
+                tabs[(i*4)] =':';
+                tabs[(i*4)+1] = ' ';
+                tabs[(i*4)+2] = ' ';
+                tabs[(i*4)+3] = ' ';
+                tabs[(i*4)+4] = 0x0;
             }
-            log_trace("%s--| %s(-%s)",tabs, node->name,print_flags(node));
+            log_trace("%s|--> %s(-%s)",tabs, node->name,print_flags(node));
         }
         
     }
