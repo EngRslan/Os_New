@@ -23,7 +23,6 @@ const char *StbBindings[]={
     [13]="LOPROC",
     [15]="HIPROC"
 };
-
 const char *StbTypes[]={
     "NOTYPE",
     "OBJECT",
@@ -33,13 +32,11 @@ const char *StbTypes[]={
     [13]="LOPROC",
     [15]="HIPROC"
 };
-
 const char *RtTTypes[]={
     "R_386_NONE",
     "R_386_32",
     "R_386_PC32"
 };
-
 const char *EMachine[]={
     "No machine",
     "AT&T WE 32100",
@@ -59,7 +56,6 @@ const char *EMachine[]={
     [0xB7]="AArch64",
     [0xF3]="RISC-V"
 };
-
 const char* PhTypes[]={
     "NULL",
     "LOAD",
@@ -69,7 +65,6 @@ const char* PhTypes[]={
     "SHLIB",
     "PHDR"
 };
-
 char *secFlag(Elf32Word flag){
     uint8_t cidx = 0;
     static char flg[3];
@@ -123,6 +118,38 @@ char *secFlag(Elf32Word flag){
     flg[cidx] = 0x0;
     return flg;
 }
+char *progFlag(Elf32Word flag){
+    uint8_t cidx = 0;
+    static char flg[3];
+    if(flag == 0){
+        flg[0]=' ';
+        flg[1]=0x0;
+        return flg;
+    }
+    for (size_t i = 0; i < sizeof(flag) * 4; i++)
+    {
+        uint32_t isSet = flag & (1 << i);
+
+        switch (isSet)
+        {
+        case PHF_READ:
+            flg[cidx++] = 'R';
+            break;
+        case PHF_WRITE:
+            flg[cidx++] = 'W';
+            break;
+        case PHF_EXECUTE:
+            flg[cidx++] = 'E';
+            break;
+        default:
+            if(isSet>0)
+                flg[cidx++] = '-';
+            break;
+        }
+    }
+    flg[cidx] = 0x0;
+    return flg;
+}
 char *specialSI(Elf32Half ndx){
     static char str[4];
     uint8_t i = 0;
@@ -165,7 +192,6 @@ void printSectionHeaders(Elf32Ehdr *hdr){
             (uint32_t)i,elfLookupString(hdr,sec->sh_name),secTypes[sec->sh_type],sec->sh_addr,sec->sh_offset,sec->sh_size,sec->sh_entsize,secFlag(sec->sh_flags),sec->sh_link,sec->sh_info,sec->sh_addralign);
     }
 }
-
 void printRelSection(Elf32Ehdr *hdr,Elf32Shdr *sec){
     int reltab_entries = sec->sh_size/sec->sh_entsize;
     int relAddr = (int)hdr + sec->sh_offset;
@@ -182,7 +208,6 @@ void printRelSection(Elf32Ehdr *hdr,Elf32Shdr *sec){
         log_information("%08x\033[22G%08x\033[31G%s\033[45G%08x\033[56G%s",relentry->r_offset,relentry->r_info,(uint32_t)RtTTypes[ELF32_R_TYPE(relentry->r_info)],(uint32_t)entry->st_value,name);
     }
 }
-
 void printSymSection(Elf32Ehdr *hdr,Elf32Shdr *sec){
     int symtab_entries = sec->sh_size/sec->sh_entsize;
     int symAddr = (int)hdr + sec->sh_offset;
@@ -218,7 +243,7 @@ void printProgramHeaders(Elf32Ehdr *hdr){
     {
         Elf32Phdr *phdr = &phdrbase[i];
         log_information("\033[12G%s\033[27G0x%06x\033[36G0x%08x\033[47G0x%08x\033[58G0x%05x\033[66G0x%05x\033[74G%3s\033[78G0x%04x",
-            PhTypes[phdr->p_type],phdr->p_offset,phdr->p_vaddr,phdr->p_paddr,phdr->p_filesz,phdr->p_memsz,secFlag(phdr->p_flags),phdr->p_align);
+            PhTypes[phdr->p_type],phdr->p_offset,phdr->p_vaddr,phdr->p_paddr,phdr->p_filesz,phdr->p_memsz,progFlag(phdr->p_flags),phdr->p_align);
     }
     
 }

@@ -1,7 +1,9 @@
 CFLAGS = -c -std=gnu99 -ffreestanding -Wno-unused-parameter -Wno-unused-variable -O0 -Wall -Wextra -g
 ASFLAGS = -f elf32
-LDFLAGS = -r -O0 -s -nostdlib
+LDFLAGS = -O0 -nostdlib
 # -fPIC -shared ======> shared lib
+#-r ==> relocatable
+#-s strip sections
 .PHONY: clean
 build: testmod
 clean:

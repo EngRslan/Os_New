@@ -78,6 +78,12 @@ enum ShTAttributes {
     SHF_TLS             = 0x400
 };
 
+enum PhFlags {
+    PHF_EXECUTE = 0x01,
+    PHF_WRITE = 0x02,
+    PHF_READ = 0x04,
+};
+
 # define ELF32_ST_BIND(INFO)	((INFO) >> 4)
 # define ELF32_ST_TYPE(INFO)	((INFO) & 0x0F)
 enum StTBindings{
@@ -180,5 +186,6 @@ typedef struct
 } Elf32Phdr;
 
 void loadmodule(void *buffer);
+void ElfLoad(char *buffer);
 void ReadElf(void *buffer);
 #endif

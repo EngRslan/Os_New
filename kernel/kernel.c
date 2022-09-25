@@ -169,11 +169,12 @@ void loadKernelMods(){
   // file_open("/boot/testmod.so");
   FsNode *node = VfsGetMountpoint("/mnt/cdrom/boot");
   FsOpen(node,0,0);
-  node = VfsGetMountpoint("/mnt/cdrom/boot/kernel.elf");
+  node = VfsGetMountpoint("/mnt/cdrom/boot/testmod.so");
   FsOpen(node,0,0);
   void *buff = kmalloc(node->length);
   FsRead(node,0,node->length,buff);
-  ReadElf(buff);
+  // ReadElf(buff);
+  ElfLoad(buff);
   // node = VfsGetMountpoint("/mnt/cdrom/boot/grub/i386-pc");
   // FsOpen(node,0,0);
   // print_h();

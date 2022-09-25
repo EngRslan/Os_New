@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <logger.h>
 #include <stddef.h>
+#include <kernel/mem/vmm.h>
+#include <string.h>
 
 
 bool ElfCheckFile(Elf32Ehdr *hdr){
@@ -25,7 +27,6 @@ bool ElfCheckFile(Elf32Ehdr *hdr){
 
     return true;
 }
-
 bool ElfCheckSupported(Elf32Ehdr *hdr){
     if(!ElfCheckFile(hdr)){
         return false;
@@ -102,7 +103,41 @@ char *elfLookupString(Elf32Ehdr *hdr,int offset){
     if(strtab == NULL)return NULL;
     return strtab + offset;
 }
+void ElfLoad(char *buffer){
+   Elf32Ehdr * hdr = (Elf32Ehdr *)buffer;
+   if(!ElfCheckSupported(hdr))
+   {
+        return;
+   } 
+    Elf32Shdr *sectionBase = (Elf32Shdr *)((char *)hdr + hdr->e_shoff);
+    void *page = NULL;
+    for (int i = 0; i < hdr->e_shnum; i++)
+    {
+        Elf32Shdr *section = &sectionBase[i];
+        if(section->sh_flags & SHF_ALLOC){
+            if(page == NULL){
+                allocate_page(kernel_directory,(v_addr_t)section->sh_addr,0,1);
+                page = (void *)section->sh_addr;
+            }
 
+            memcpy(section->sh_addr,(char *)hdr + section->sh_offset,section->sh_size);
+        }
+    }
+
+        log_trace("start application");
+     ((void (*)(void))hdr->e_entry)();
+        log_trace("application successfully exit");
+
+//     Elf32Phdr *progbase = (Elf32Phdr *)((char *)hdr + hdr->e_phoff);
+//    for (int i = 0; i < hdr->e_phnum; i++)
+//    {
+//         Elf32Phdr *prgh = &progbase[i];
+//         if(prgh->p_type == PT_LOAD){
+
+//         }
+//    }
+   
+}
 void loadmodule(void *buffer){
    Elf32Ehdr * hdr = (Elf32Ehdr *)buffer;
    if(!ElfCheckSupported(hdr))
