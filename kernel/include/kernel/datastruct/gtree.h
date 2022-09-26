@@ -1,6 +1,6 @@
 #ifndef GTREE_H
 #define GTREE_H
-
+#define foreach_t(item,tree_node) for(gtree_node_t * item = tree_node->first_child;item != NULL;item=item->next_subling)
 typedef struct gtree_node
 {
   struct gtree_node * first_child;

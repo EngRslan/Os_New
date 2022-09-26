@@ -43,7 +43,7 @@ bochs: build
 	bochs -q
 hdd:
 	dd if=/dev/zero of=hdd.img count=1440 bs=1024
-.PHONY: modules kernel clean
+.PHONY: modules kernel clean kernelmods
 clean:
 	$(MAKE) --directory=$(KERNEL_DIR) clean
 	$(MAKE) --directory=$(KERNELMODS_DIR) clean

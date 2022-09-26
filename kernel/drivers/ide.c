@@ -3,6 +3,7 @@
 #include <kernel/mem/vmm.h>
 #include <kernel/mem/pmm.h>
 #include <kernel/mem/kheap.h>
+#include <kernel/filesystems/fs.h>
 #include <kernel/filesystems/vfs.h>
 #include <kernel/system.h>
 #include <kernel/bits.h>
@@ -427,7 +428,7 @@ uint8_t ide_atapi_read(uint8_t drive,uint32_t lba, uint8_t numsectors,ptr_t buff
     atapi_packet[1] = 0;
     atapi_packet[2] = (lba >> 24) & 0xFF;
     atapi_packet[3] = (lba >> 16) & 0xFF;
-    atapi_packet[4] = (lba >> 18) & 0xFF;
+    atapi_packet[4] = (lba >> 8) & 0xFF;
     atapi_packet[5] = (lba >> 0) & 0xFF;
     atapi_packet[6] = 0 ;
     atapi_packet[7] = 0 ;
@@ -569,8 +570,8 @@ uint8_t ide_write_sectors(uint8_t drive,uint8_t numsectors,uint32_t lba,ptr_t bu
     
     return err; 
 }
-uint32_t ide_vfs_read(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_t buffer){
-    struct ide_device device = devices[node->device];
+uint32_t ide_vfs_read(FsNode * node,uint32_t offset, uint32_t size,uint8_t *buffer){
+    struct ide_device device = devices[node->inode];
     uint32_t sector_size = device.type == IDE_ATA?512:2048;
     uint32_t lba = offset/sector_size;
     uint32_t lba_offset = offset%sector_size;
@@ -578,7 +579,7 @@ uint32_t ide_vfs_read(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_
     uint32_t lba_end = (offset + size -1) / sector_size;
     uint32_t lba_end_offset = (offset + size -1) % sector_size;
 
-    char * buf_curr = buffer;
+    uint8_t * buf_curr = buffer;
     uint32_t counter = lba;
     uint32_t read_size ;
     uint32_t off,total=0;
@@ -587,7 +588,7 @@ uint32_t ide_vfs_read(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_
     {
         off = 0;
         read_size = sector_size;
-        ide_read_sectors(node->device,1,counter,sector_buffer);
+        ide_read_sectors(node->inode,1,counter,sector_buffer);
         if(counter == lba){
             off=lba_offset;
             read_size = sector_size - off;
@@ -608,20 +609,19 @@ uint32_t ide_vfs_read(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_
     
 
 }
-uint32_t ide_vfs_write(struct vfs_node * node,uint32_t offset, uint32_t size,ptr_t buffer){
+uint32_t ide_vfs_write(FsNode * node,uint32_t offset, uint32_t size,uint8_t *buffer){
     return 0;
 }
 uint8_t ide_vfs_mount_device(uint8_t drive){
     if(drive>3 || !devices[drive].present)return 1;//Drive Not Found
 
-    vfs_node_t * vfs_node = (vfs_node_t *)kmalloc(sizeof(vfs_node_t));
-    vfs_node->device = drive;
-    strcpy(vfs_node->name,(const char * []){"/dev/hda","/dev/hdb","/dev/hdc","/dev/hdd"}[drive]);
-    vfs_node->flags = FS_BLOCKDEVICE;
+    FsNode *vfs_node = (FsNode *)kmalloc(sizeof(FsNode));
+    vfs_node->inode = drive;
+    strcpy(vfs_node->name,(const char * []){"hda","hdb","hdc","hdd"}[drive]);
+    vfs_node->flags |= FS_BLOCKDEVICE;
     vfs_node->read = ide_vfs_read;
     vfs_node->write = ide_vfs_write;
-
-    vfs_mount(vfs_node->name,vfs_node);
+    VfsMount((char * []){"/dev/hda","/dev/hdb","/dev/hdc","/dev/hdd"}[drive],vfs_node);
     return 0;
 }
 void ide_install(pci_config_t * ide_device)

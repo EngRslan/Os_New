@@ -1,146 +1,270 @@
 #include <kernel/filesystems/vfs.h>
+#include <kernel/filesystems/fs.h>
 #include <kernel/datastruct/gtree.h>
 #include <kernel/mem/kheap.h>
-#include <string.h>
+#include <kernel/bits.h>
+#include <kernel/datastruct/stack.h>
+#include <stddef.h>
 #include <logger.h>
+#include <string.h>
 
-gtree_t * vfs_tree;
-vfs_node_t * vfs_root;
+#define foreach_sub(item,cwn)for (FsNode * item = cwn->child; item != NULL;item = item->next)
 
-char *strdup(const char *src){
-    char *dst = kmalloc(strlen(src)+1);
-    strcpy(dst,src);
-    return dst;
-}
-int32_t vfs_read(vfs_node_t * node,uint32_t offset,uint32_t size,char * buffer){
-    if(node && node->read){
-        return node->read(node,offset,size,buffer);
-    }
-    return -1;
-}
-vfs_node_t * get_mountpoint_recur(string_t path,gtree_node_t * subroot){
-    string_t token = strsep(&path,"/");
-    if(token == NULL || strcmp(token,"") == 0){
-        struct vfs_entry * entry = (struct vfs_entry *)subroot->value;
-        return entry->file;
+// gtree_t *fs_tree = NULL;
+FsNode *root;
+VfsFileSystem * registerdFileSystems[10];
+
+static struct DirEntry *vfs_readdir(FsNode *node, uint32_t index)
+{
+    static DirEntry direntry ;
+    foreach_sub(item,node){
+        if(item->inode == index){
+            strcpy(direntry.name,item->name);
+            direntry.name[strlen(direntry.name)] = 0;
+            direntry.ino = item->inode;
+            return &direntry;
+        }
     }
 
-    gtree_node_t * child = subroot->first_child;
-    int32_t found = 0;
+    return NULL;
+}
+static struct FsNode *vfs_finddir(FsNode *node, char *name)
+{
+    foreach_sub(item,node){
+        if(strcmp(item->name,name) == 0){
+            return item;
+        }
+    }
 
-    while (child)
+    return NULL;
+}
+void VfsRegisterFileSystem(VfsFileSystem *filesystem){
+    if(!filesystem || !filesystem->mount || filesystem->name[0] == 0x0)
     {
-        struct vfs_entry * entry = (struct vfs_entry *)(child->value);
-        if(strcmp(entry->name,token)==0){
-            found = 1;
-            subroot = child;
-            break;
-        }
-
-        child = child->next_subling;
-    }
-
-    if(!found){
-        return NULL;
-    }
-
-    return get_mountpoint_recur(path,subroot);
-
-}
-vfs_node_t * get_mountpoint(string_t path){
-    if(strlen(path) > 1 && path[strlen(path) - 1] == '/'){
-        path[strlen(path) - 1] = 0;
-    }
-    if(!path || path[0] != '/')return NULL;
-    if(strlen(path) == 1){
-        struct vfs_entry * entry = (struct vfs_entry *)vfs_tree->root->value;
-        return entry->file;
-    }
-    path++;
-    return get_mountpoint_recur(path,vfs_tree->root);
-}
-void vfs_mount_recur(string_t path,gtree_node_t * subroot,vfs_node_t * fs_obj){
-    
-    string_t token = strsep(&path,"/");
-    if(token == NULL || strcmp(token,"") == 0){
-        struct vfs_entry * entry = (struct vfs_entry *)subroot->value;
-        if(entry->file){
-            log_warning("path already mounted");
-            return;
-        }
-        if(strcmp(entry->name,"/")==0)vfs_root = fs_obj;
-        entry->file = fs_obj;
         return;
     }
 
-    gtree_node_t * child = subroot->first_child;
-    int32_t found = 0;
-
-    while (child)
+    for (uint8_t i = 0; i < 10; i++)
     {
-        struct vfs_entry * entry = (struct vfs_entry *)(child->value);
-        if(strcmp(entry->name,token)==0){
-            found = 1;
-            subroot = child;
+        if(registerdFileSystems[i]){
+            continue;
+        }
+
+        registerdFileSystems[i] = filesystem;
+        break;
+    }
+}
+void VfsMountFs(char *path,char *mountpoint,char *fsname){
+    VfsFileSystem * fs = NULL;
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        if(registerdFileSystems[i] && strcmp(registerdFileSystems[i]->name,fsname)==0){
+            fs = registerdFileSystems[i];
+            break;
+        }
+    }
+
+    if(fs){
+        fs->mount(path,mountpoint);
+    }
+}
+void VfsMount(char *cpath,FsNode *node){
+    char *path = kmalloc(strlen(cpath)+1);
+    strcpy(path,cpath);
+    path[strlen(cpath)] = 0;
+
+
+    if(path[0] != '/'){
+        //Currently we don't support Relative Path
+        return;    
+    }
+
+    // gtree_node_t *token_node = fs_tree->root;
+
+    FsNode *cwn = root;
+    char *filepath = path+1;
+    char *token = NULL;
+
+    while ((token = strsep(&filepath,"/")))
+    {
+        if(filepath == NULL || strcmp(filepath,"") == 0){
+            // gtree_create_child(token_node,(uint32_t)node);
+            vfsLinkChild(cwn,node);
             break;
         }
 
-        child = child->next_subling;
-    }
+        cwn = vfs_finddir(cwn,token);
+        // // TODO FIX
+        // //token_node = ((FsNode *)token_node)->finddir((FsNode *)token_node->value,token);
+        // foreach_t(item,token_node){
+        //     FsNode * snode = (FsNode *)item->value;
+        //     if(strcmp(snode->name,token) == 0){
+        //         token_node = item;
+        //         break;
+        //     }
 
+        //     if(!item->next_subling){
+        //         token_node = NULL;
+        //     }
+        // }
 
-    if(!found){
-        struct vfs_entry * entry = kmalloc(sizeof(struct vfs_entry));
-        entry->name = strdup(token);
-        subroot = gtree_create_child(subroot,(uint32_t)entry);
-    }
-    
-    vfs_mount_recur(path,subroot,fs_obj);
-    
-}
-void vfs_mount(string_t path,vfs_node_t * node){
-    node->fs_type = 0;  
-    if(path[0] == '/' && strlen(path) == 1){
-        struct vfs_entry * entry = (struct vfs_entry *)vfs_tree->root->value;
-        if(entry->file){
-            log_warning("The path already mounted");
+        if(!cwn){
+            log_warning("Vfs Mount didn't complete directory didn't found");
+            break;
         }
-        vfs_root = node;
-        entry->file = node;
+    }
+
+    kfree(path);
+
+}
+FsNode *VfsGetMountpoint(char *cpath){
+    char *path = kmalloc(strlen(cpath)+1);
+    strcpy(path,cpath);
+    path[strlen(cpath)] = 0;
+
+    if(path[0] != '/'){
+        //Currently we don't support Relative Path
+        return NULL;    
+    }
+
+    char *filepath = path+1;
+    char *token = NULL;
+    // gtree_node_t *token_node = fs_tree->root;
+    FsNode *cwn = root;
+    while ((token = strsep(&filepath,"/")))
+    {
+        if(token == NULL || strcmp(token,"") == 0){
+            kfree(path);
+            return cwn;
+        }
+
+        cwn = vfs_finddir(cwn,token);
+
+        if(!cwn){
+            break;
+        }
+    }
+
+    kfree(path);
+    return cwn;
+
+}
+void vfsLinkChild(FsNode *parent, FsNode *child){
+    if(parent == NULL || child == NULL){
         return;
     }
 
-    vfs_mount_recur(path+1,vfs_tree->root,node);
+    child->parent = parent;
+    child->next = parent->child;
+    parent->child = child;
 }
-vfs_node_t * file_open(const string_t file_name,uint32_t flags){
-    string_t filename = strdup(file_name);
-    vfs_node_t * file_node = get_mountpoint(filename);
-    kfree(filename);
-    return file_node;
+void VfsInstall(){
+    uint32_t inode = 0;
+
+    root = (FsNode *)kmalloc(sizeof(FsNode));
+    memset(root,0,sizeof(root));
+    strcpy(root->name,"/");
+    root->flags |= FS_DIRECTORY;
+    root->finddir = vfs_finddir;
+    root->readdir = vfs_readdir;
+    
+    // fs_tree = gtree_create((uint32_t)fs_root);
+
+    FsNode * fs_dev = (FsNode *)kmalloc(sizeof(FsNode));
+    memset(fs_dev,0,sizeof(FsNode));
+    strcpy(fs_dev->name,"dev");
+    fs_dev->flags |= FS_DIRECTORY;
+    fs_dev->finddir = vfs_finddir;
+    fs_dev->readdir = vfs_readdir;
+    fs_dev->inode = inode++;
+    vfsLinkChild(root,fs_dev);
+    // gtree_create_child(fs_tree->root,(uint32_t)fs_dev);
+
+    FsNode * fs_mnt = (FsNode *)kmalloc(sizeof(FsNode));
+    memset(fs_mnt,0,sizeof(FsNode));
+    strcpy(fs_mnt->name,"mnt");
+    fs_mnt->flags |= FS_DIRECTORY;
+    fs_mnt->finddir = vfs_finddir;
+    fs_mnt->readdir = vfs_readdir;
+    fs_mnt->inode = inode++;
+    vfsLinkChild(root,fs_mnt);
+    // gtree_create_child(fs_tree->root,(uint32_t)fs_mnt);
+
+    FsNode * fs_tmp = (FsNode *)kmalloc(sizeof(FsNode));
+    memset(fs_tmp,0,sizeof(FsNode));
+    strcpy(fs_tmp->name,"tmp");
+    fs_tmp->flags |= FS_DIRECTORY;
+    fs_tmp->finddir = vfs_finddir;
+    fs_tmp->readdir = vfs_readdir;
+    fs_tmp->inode = inode++;
+    vfsLinkChild(root,fs_tmp);
+    // gtree_create_child(fs_tree->root,(uint32_t)fs_tmp);
 }
+
 char tabs[50];
-void print_hierarchy(gtree_node_t * node,int depth){
-  if(depth == 0){
-    tabs[0] = 0;
-  }
-  for (int i = 0; i < depth; i++)
-  {
-    tabs[i]='\t';
-    tabs[i+1]=0x0;
-  }
-  struct vfs_entry * entry = (struct vfs_entry *)node->value;
-  
-  log_trace("%s--| %s",tabs, entry->name);
+char *print_flags(FsNode *node){
+    switch (node->flags)
+    {
+    case FS_FILE:
+        return "f";
+    case FS_DIRECTORY | FS_MOUNTPOINT:
+        return "md";
+    case FS_DIRECTORY:
+        return "d";
+    case FS_BLOCKDEVICE:
+        return "db";
+    case FS_CHARDEVICE:
+        return "dc";
+    default:
+        return "Un";
+    }
 }
 void print_h(){
-    gtree_descendant_exec(vfs_tree->root,print_hierarchy,0);
-}
-vfs_node_t *open_dir(string_t dir){
-    
-}
-void vfs_install(){
-    vfs_entry_t * root = (vfs_entry_t *)kmalloc(sizeof(vfs_entry_t));
-    root->name = strdup("root");
-    root->file = NULL;
-    vfs_tree = gtree_create((uint32_t)root);
+    // gtree_descendant_exec(fs_tree->root,print_hierarchy,0);
+    FsNode *node = root;
+    int depth = 0;
+    log_trace("|--> %s", node->name);
+
+    while (node)
+    {
+        if(node->child)
+        {
+            node = node->child;
+            depth ++;
+        }
+        else if(node->next)
+        {
+            node = node->next;
+        }
+        else
+        {
+            // while node has parent and no parent dosn't has subling
+            while (node->parent && !node->parent->next)
+            {
+                node = node->parent;
+                depth--;
+            }
+
+            if(!node->parent){
+                return;
+            }
+            
+            node = node->parent->next;
+            depth --;
+        }
+        
+        if(node){
+            for (int i = 0; i < depth; i++)
+            {
+                tabs[(i*4)] =':';
+                tabs[(i*4)+1] = ' ';
+                tabs[(i*4)+2] = ' ';
+                tabs[(i*4)+3] = ' ';
+                tabs[(i*4)+4] = 0x0;
+            }
+            log_trace("%s|--> %s(-%s)",tabs, node->name,print_flags(node));
+        }
+        
+    }
+
 }
