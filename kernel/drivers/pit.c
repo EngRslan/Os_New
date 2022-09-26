@@ -12,7 +12,7 @@
 #define CHANNEL_0_DATA_PORT 0x40
 #define COMMAND_REGISTER_PORT 0x43
 void interrupt_handler(register_t * reg);
-uint64_t millis = 0;
+uint64_t ticks = 0;
 void pit_install(){
     /*
     Bits         Usage
@@ -39,7 +39,7 @@ void pit_install(){
     */
     outportb(COMMAND_REGISTER_PORT,0b00110110);
 
-    uint16_t freq = INPUT_CLOCK_FREQUENCY / 1000;
+    uint16_t freq = INPUT_CLOCK_FREQUENCY * 0.001;// Every 1 Milliseconds
     outportb(CHANNEL_0_DATA_PORT,freq & 0xFF); //LOW BYTE
     outportb(CHANNEL_0_DATA_PORT,(freq >> 8) & 0xFF); // HIGH BYTE
 
@@ -47,9 +47,9 @@ void pit_install(){
 }
 
 void interrupt_handler(register_t * reg){
-    millis+=1;
-    //log_trace("seconds = %d",millis);
-    // if((millis % 1000)==0){
-    //     log_trace("seconds = %d",millis/1000);
+    ticks+=1;
+    //log_trace("seconds = %d",ticks);
+    // if((ticks % 1000)==0){
+    //     log_trace("seconds = %d",ticks/1000);
     // }
 }

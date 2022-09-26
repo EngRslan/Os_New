@@ -31,6 +31,7 @@
 #include <kernel/net/dhcp.h>
 #include <kernel/net/manager.h>
 #include <kernel/elf.h>
+#include <kernel/scheduler/scheduler.h>
 
 void loadKernelMods();
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
@@ -106,6 +107,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
 
   pit_install();
   log_information("Install Programable Interval Timer (PIT) .installed");
+  uint32_t startmills = millis();
   
   FsInstall();
   log_information("Install Virtual File System (VFS) .installed");
@@ -134,6 +136,8 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("Installing Network Successfully");
 
   loadKernelMods();
+  uint32_t endmills = millis();
+  log_information("System loaded in %d MS",endmills - startmills);
   // uint8_t e = 0b00001111;
   // __asm__ __volatile__ ("rorb $4,%0":"=r"(e):"r"(e));
   // e=SWITCH_BITS(e,4);
@@ -169,12 +173,12 @@ void loadKernelMods(){
   // file_open("/boot/testmod.so");
   FsNode *node = VfsGetMountpoint("/mnt/cdrom/boot");
   FsOpen(node,0,0);
-  node = VfsGetMountpoint("/mnt/cdrom/boot/testmod.so");
+  node = VfsGetMountpoint("/mnt/cdrom/boot/kernel.elf");
   FsOpen(node,0,0);
   void *buff = kmalloc(node->length);
   FsRead(node,0,node->length,buff);
-  // ReadElf(buff);
-  ElfLoad(buff);
+  ReadElf(buff);
+  //ElfLoad(buff);
   // node = VfsGetMountpoint("/mnt/cdrom/boot/grub/i386-pc");
   // FsOpen(node,0,0);
   // print_h();
