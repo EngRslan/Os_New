@@ -15,7 +15,26 @@ extern uint64_t ticks;
 uint32_t Millis(){
     return ticks;
 }
+void ScheduleHandle(){
+    if(nextSchedule){
+        //TODO TO MAKE SEARCH MORE FASTER
+        Schedule *currentServe = nextSchedule;
+                __asm__("cli");
+        while (currentServe)
+        {
+            if(currentServe->nextExecution < ticks){
+                currentServe->callback();
+                currentServe->nextExecution = ticks + currentServe->interval;
+            }
+            currentServe = currentServe->next;
+        }
+                __asm__("sti");
+    }
+    
+}
+
 void ScheduleInterval(ScheduleCallback callback,uint32_t interval){
+    __asm__("cli");
         Schedule *schedule = (Schedule *)kmalloc(sizeof(Schedule));
         schedule->callback = callback;
         schedule->interval = interval;
@@ -27,21 +46,31 @@ void ScheduleInterval(ScheduleCallback callback,uint32_t interval){
     }
 
     Schedule *prev;
-    Schedule *next;
+    Schedule *current = nextSchedule;
     while (1)
     {
-        if(next->nextExecution > schedule->nextExecution){
-            schedule->next=next;
-            prev->next = schedule;
+        if(current->nextExecution > schedule->nextExecution){
+            schedule->next = current;
+            if(prev != NULL)
+            {
+                prev->next = schedule;
+            }
+            else
+            {
+                nextSchedule = schedule;
+            }
             break;
         }
         
 
-        prev = next;
-        next = next->next;
+        prev = current;
+        current = current->next;
+
+        if(current == NULL){
+            prev->next = schedule;
+            break;
+        }
     }
-    (nextSchedule->nextExecution < schedule->nextExecution){
-        
-    }
+    __asm__("sti");
     
 }

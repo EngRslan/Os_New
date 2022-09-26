@@ -7,6 +7,7 @@
 #include <kernel/drivers/pit.h>
 #include <kernel/isr.h>
 #include <logger.h>
+#include <kernel/scheduler/scheduler.h>
 
 #define INPUT_CLOCK_FREQUENCY  1193182
 #define CHANNEL_0_DATA_PORT 0x40
@@ -48,6 +49,7 @@ void pit_install(){
 
 void interrupt_handler(register_t * reg){
     ticks+=1;
+    ScheduleHandle();
     //log_trace("seconds = %d",ticks);
     // if((ticks % 1000)==0){
     //     log_trace("seconds = %d",ticks/1000);

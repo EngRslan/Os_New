@@ -34,6 +34,12 @@
 #include <kernel/scheduler/scheduler.h>
 
 void loadKernelMods();
+void task1(){
+  log_debug("task1");
+}
+void task2(){
+  log_debug("task2");
+}
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
   
@@ -61,7 +67,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
     vga_install(mbi->framebuffer_addr,mbi->framebuffer_width,mbi->framebuffer_height,mbi->framebuffer_bpp);
   }
   printf(logo);
-  
+  printf("test \033[2J");
   log_information("Installing GDT");
   gdt_install();
   log_information("GDT Installed Successfully");
@@ -107,7 +113,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
 
   pit_install();
   log_information("Install Programable Interval Timer (PIT) .installed");
-  uint32_t startmills = millis();
+  uint32_t startmills = Millis();
   
   FsInstall();
   log_information("Install Virtual File System (VFS) .installed");
@@ -136,8 +142,11 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("Installing Network Successfully");
 
   loadKernelMods();
-  uint32_t endmills = millis();
+  uint32_t endmills = Millis();
   log_information("System loaded in %d MS",endmills - startmills);
+  ScheduleInterval(task1,1000);
+  // ScheduleInterval(task1,500);
+  ScheduleInterval(task2,2500);
   // uint8_t e = 0b00001111;
   // __asm__ __volatile__ ("rorb $4,%0":"=r"(e):"r"(e));
   // e=SWITCH_BITS(e,4);

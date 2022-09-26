@@ -5,4 +5,5 @@ typedef void (*ScheduleCallback)(void);
 
 uint32_t Millis();
 void ScheduleInterval(ScheduleCallback callback,uint32_t interval);
+void ScheduleHandle();
 #endif
