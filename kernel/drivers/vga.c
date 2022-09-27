@@ -9,14 +9,39 @@
 #define TEXTSTYLE(fg,fgb,bg,bgb)(((bgb & 0x1)<<7) | ((bg & 7) << 4) | (fgb & 0x1) << 3 | (fg & 7))
 #define PAINT(a,b) (((b & 0xFF) << 8) | (a & 0xFF))
 #define MIN(a,b)(a>b?b:a)
+uint8_t terminalColors[]={
+    [30]=VGA_COLOR_BLACK,
+    [31]=VGA_COLOR_RED,
+    [32]=VGA_COLOR_GREEN,
+    [33]=VGA_COLOR_BROWN,
+    [34]=VGA_COLOR_BLUE,
+    [35]=VGA_COLOR_MAGENTA,
+    [36]=VGA_COLOR_CYAN,
+    [37]=VGA_COLOR_LIGHTGRAY,
+    [40]=VGA_COLOR_BLACK,
+    [41]=VGA_COLOR_RED,
+    [42]=VGA_COLOR_GREEN,
+    [43]=VGA_COLOR_BROWN,
+    [44]=VGA_COLOR_BLUE,
+    [45]=VGA_COLOR_MAGENTA,
+    [46]=VGA_COLOR_CYAN,
+    [47]=VGA_COLOR_LIGHTGRAY,
+};
 uint16_t * buffer_address=0;
 uint32_t buffer_length = 0;
 uint16_t columns=0, rows=0;
 uint8_t bpp=0;
 uint16_t x=0,y=0;
 
-uint8_t foreground = VGA_COLOR_LIGHTGRAY;
-uint8_t background = VGA_COLOR_BLUE;
+#define DEFAULT_VGA_FOREGROUND VGA_COLOR_LIGHTGRAY
+#define DEFAULT_VGA_BACKGROUND VGA_COLOR_BLACK
+#define DEFAULT_VGA_FOREGROUND_BRIGHT 1
+#define DEFAULT_VGA_BACKGROUND_BRIGHT 0
+
+uint8_t foreground = DEFAULT_VGA_FOREGROUND;
+uint8_t background = DEFAULT_VGA_BACKGROUND;
+uint8_t foreground_bright = DEFAULT_VGA_FOREGROUND_BRIGHT;
+uint8_t background_bright = DEFAULT_VGA_BACKGROUND_BRIGHT;
 
 void clear_screen(){
 
@@ -166,18 +191,24 @@ void csi(char* args,char command)
         x = n;
         break;
    }
-   case 'H': // CUP => move the cursor to row n and column y
+   case 'H': // CUP => move the cursor to row n and column w
    {
-        uint32_t n = strtol(args,&endptr,10);
-        uint32_t y = strtol(endptr++,&endptr,10);
+        uint32_t w = strtol(args,&endptr,10);
+        uint32_t n = strtol(++endptr,&endptr,10);
 
         x = n;
-        y = y;
+        y = w;
 
         break;
    }
    case 'f':
+    {
+        uint32_t w = strtol(args,&endptr,10);
+        uint32_t n = strtol(++endptr,&endptr,10);
 
+        x = n;
+        y = w;/* code */
+   }
     break;
    case 'J': // ED => Clear Screen
                 // MODE 0 => Clear from cursor to end
@@ -188,10 +219,24 @@ void csi(char* args,char command)
         switch (n)
         {
             case 0:
-                
+                for (int r = y, c=x; r<rows; r++,c=0)
+                {
+                    for (; c < columns; c++)
+                    {
+                        PIXEL(c,r) = PAINT(' ',TEXTSTYLE(foreground,1,background,0));
+                    }
+                    
+                }
                 break;
             case 1:
-                
+                for (int r = y, c=x; r>=0; r--,c=columns)
+                {
+                    for (; c >= 0; c--)
+                    {
+                        PIXEL(c,r) = PAINT(' ',TEXTSTYLE(foreground,1,background,0));
+                    }
+                    
+                }
                 break;
             case 2:
                 clear_screen();
@@ -205,8 +250,42 @@ void csi(char* args,char command)
    case 'K': // EL => Clear Line
                 // Mode 0 => Clear from cursor to line end
                 // Mode 1 => Clear from cursor to line start
-                // Mode 3 => Clear entire line
-        
+                // Mode 2 => Clear entire line
+        {
+            uint32_t n = strtol(args,&endptr,10);
+            switch (n)
+            {
+            case 0:
+            {
+                for (int tmpx = x; tmpx < columns; tmpx++)
+                {
+                    PIXEL(tmpx,y) = PAINT(' ',TEXTSTYLE(foreground,1,background,0));
+                }
+                
+                break;
+            }    
+            case 1:
+            {
+                for (int tmpx = 0; tmpx < x; tmpx++)
+                {
+                    PIXEL(tmpx,y) = PAINT(' ',TEXTSTYLE(foreground,1,background,0));
+                }
+                break;
+            }
+            case 2:
+            {
+                for (int tmpx = 0; tmpx < columns; tmpx++)
+                {
+                    PIXEL(tmpx,y) = PAINT(' ',TEXTSTYLE(foreground,1,background,0));
+                }
+                break;
+            }
+                
+            
+            default:
+                break;
+            }
+        }
     break;
    case 'S':
 
@@ -215,6 +294,7 @@ void csi(char* args,char command)
 
     break;
    case 'm': // SCGR=> change cursor foreground and background
+   {
                 //Mode 0 => Reset Color Attributes
                 //Mode 1 => Set Font Weight
                 //MODE 30 => Foreground Black
@@ -234,8 +314,53 @@ void csi(char* args,char command)
                 //MODE 45 => Background MAGENTA
                 //MODE 46 => Background CYAN
                 //MODE 47 => Background WHITE
+                uint32_t n1 =0;
+                uint32_t n2 =0;
+                uint32_t n3 =0;
+                uint32_t n4 =0;
+                if(args != NULL){
+                    n1 = strtol(args,&endptr,10);
+                    n2 = strtol(++endptr,&endptr,10);
+                    n3 = strtol(++endptr,&endptr,10);
+                    n4 = strtol(++endptr,&endptr,10);
+                }
+        if(n1 == 0 && n2 == 0 && n3==0 && n4==0){
+            foreground = DEFAULT_VGA_FOREGROUND;
+            background = DEFAULT_VGA_BACKGROUND;
+            foreground_bright = DEFAULT_VGA_FOREGROUND_BRIGHT;
+            background_bright = DEFAULT_VGA_BACKGROUND_BRIGHT;
+            break;
+        }
 
-    break;
+        if(n1>=30 && n1<=37){
+            foreground = terminalColors[n1] ;
+        }
+
+        if(n2>=30 && n2<=37){
+            foreground = terminalColors[n2];
+        }
+
+        if(n1>=40 && n1<=47){
+            background = terminalColors[n1];
+        }
+
+        if(n2>=40 && n2<=47){
+            background = terminalColors[n2];
+        }
+
+        if(n4>=40 && n4<=47){
+            background = terminalColors[n4];
+        }
+
+        if(n1 == 0||n1 == 1){
+            foreground_bright = n1;
+        }
+
+        if(n3 == 0||n3 == 1){
+            background_bright = n3;
+        }
+        break;
+    }
    default:
 
     break;
@@ -251,7 +376,12 @@ void print_string(string_t str){
         if(*str=='\033'){
             if(*++str == '['){
                 //handle commands
-                commandstr = ++str;
+                commandstr = NULL;
+                if(isdigit(*++str))
+                    commandstr = str;
+                    else
+                    str --;
+
                 while (!isalpha(*++str));
                 command = *str;
                 *str++=0;

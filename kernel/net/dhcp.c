@@ -7,6 +7,7 @@
 #include <kernel/bits.h>
 #include <string.h>
 #include <logger.h>
+#include <stdio.h>
 
 void dhcpRequest(NetInterface *intf, DhcpHeader *packet);
 
@@ -183,6 +184,9 @@ void DhcpReceive(NetBuffer *netbuffer){
         char ipstrBuffer[20];
         Ipv4ToStr(ipstrBuffer,dhcpOptions.requestedIp);
         log_information("[dhcp:ack] system has fetch new ip %s",ipstrBuffer);
+        printf("\033[20,50HIp: %s",ipstrBuffer);
+        printf("\033[21,50HNetmask: %d.%d.%d.%d",dhcpOptions.subnetMask[0],dhcpOptions.subnetMask[1],dhcpOptions.subnetMask[2],dhcpOptions.subnetMask[3]);
+        printf("\033[22,50HGateway: %d.%d.%d.%d",dhcpOptions.nextServerIp[0],dhcpOptions.nextServerIp[1],dhcpOptions.nextServerIp[2],dhcpOptions.nextServerIp[3]);
     }
 
 

@@ -47,6 +47,7 @@ void log(logger_level_t level,string_t msg ,va_list arg){
     }
     sprintf(buf2,"\n[%s] %s",&style,&buf);
     serial_print(COM1,buf2);
+    // printf(buf2);
 }
 void log_fatal(string_t str,...){
     va_list arg;

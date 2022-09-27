@@ -35,10 +35,17 @@
 
 void loadKernelMods();
 void task1(){
-  log_debug("task1");
+    char date[50];
+    str_date(date);
+    //log_information("current GMT Time Now %s",date);
+    printf("\033[24,43HSystem Time Now:%s",date);//\033[1;37;0;44mtestcolor\033[mtest
 }
 void task2(){
-  log_debug("task2");
+  // log_debug("task2");
+  Ipv4Address * ip = GetDefaultIpAddress();
+  if(ip != NULL){
+    printf("\033[23,43HIp:%d.%d.%d.%d",ip[0],ip[1],ip[2],ip[3]);//\033[1;37;0;44mtestcolor\033[mtest
+  }
 }
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -67,7 +74,6 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
     vga_install(mbi->framebuffer_addr,mbi->framebuffer_width,mbi->framebuffer_height,mbi->framebuffer_bpp);
   }
   printf(logo);
-  printf("test \033[2J");
   log_information("Installing GDT");
   gdt_install();
   log_information("GDT Installed Successfully");
@@ -87,9 +93,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   //   while (*mode != 0xFFFF)
   //   {
   //     log_trace("mode: 0x%x",(uint32_t)*mode);
-  //     mode++;
-  //   }
-  //   struct VbeModeInfoBlock * mdeblock = (struct VbeModeInfoBlock *)((mbi->vbe_interface_seg * 0x10)+mbi->vbe_interface_off);
+  //     mode++;log_debug("task1");k * mdeblock = (struct VbeModeInfoBlock *)((mbi->vbe_interface_seg * 0x10)+mbi->vbe_interface_off);
   //   log_trace("VESA table available Version:%d, Total Memory:%d",(uint32_t)info_block->VbeVersion,(uint32_t)info_block->TotalMemory);
   // }
   if(BITREAD(mbi->flags,6)){
@@ -131,11 +135,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("Installing ISO9660 FileSystem");
   iso9660_install();
   VfsMountFs("/dev/hda","/mnt/cdrom",ISO9660_FILESYSTEM_NAME);
-
   log_information("ISO9660 FileSystem installed successfully");
-  char date[50];
-  str_date(date);
-  log_information("current GMT Time Now %s",date);
 
   log_information("Installing Network");
   NetworkInstall();
@@ -146,7 +146,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   log_information("System loaded in %d MS",endmills - startmills);
   ScheduleInterval(task1,1000);
   // ScheduleInterval(task1,500);
-  ScheduleInterval(task2,2500);
+  ScheduleInterval(task2,60*1000);
   // uint8_t e = 0b00001111;
   // __asm__ __volatile__ ("rorb $4,%0":"=r"(e):"r"(e));
   // e=SWITCH_BITS(e,4);

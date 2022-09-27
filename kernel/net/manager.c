@@ -49,3 +49,12 @@ void NetworkInstall(){
     DhcpDiscover(netf);
 
 }
+
+Ipv4Address *GetDefaultIpAddress()
+{
+    if(netDevices[0].hasValidIp){
+        return &netDevices[0].Ip;
+    }
+
+    return NULL;
+}

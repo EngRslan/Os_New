@@ -52,7 +52,7 @@ void handle_rtc_inturrept(register_t * reg){
 }
 
 void str_date(char * str){
-    sprintf(str,"%d/%d/%d %d:%d:%d",_tm.tm_year+1900,_tm.tm_mon,_tm.tm_mday,_tm.tm_hour,_tm.tm_min,_tm.tm_sec);
+    sprintf(str,"%d/%02d/%02d %02d:%02d:%02d",_tm.tm_year+1900,_tm.tm_mon,_tm.tm_mday,_tm.tm_hour,_tm.tm_min,_tm.tm_sec);
 }
 void install_interrupt(){
     __asm__ __volatile__("cli");
