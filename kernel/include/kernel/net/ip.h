@@ -45,7 +45,7 @@ typedef enum {
     IP_RDP      = 0x1B,
     IP_IPV6     = 0x2A
 } IpProtocol;
-typedef void (*IpProtocolHandler)(NetBuffer *);
+typedef void (*IpProtocolHandler)(NetBuffer *,Ipv4Address);
 
 typedef struct {
     bool isPresent;
@@ -56,4 +56,5 @@ typedef struct {
 void IpSend(NetBuffer *netbuffer, Ipv4Address ip, IpProtocol ipProtocol);
 void IpReceive(NetBuffer *netbuffer);
 void IpRegisterProtocolHandler(IpProtocol protocol, IpProtocolHandler handler);
+uint16_t NetChecksum(const uint8_t *data, const uint8_t *end);
 #endif

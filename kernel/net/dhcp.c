@@ -183,8 +183,13 @@ void DhcpReceive(NetBuffer *netbuffer){
     else if(dhcpOptions.messageType == DHCP_MSG_ACK){
         char ipstrBuffer[20];
         Ipv4ToStr(ipstrBuffer,dhcpOptions.requestedIp);
+        
+        defaultAssignedIpAddress.assignMethod = IP_METHOD_DHCP;
+        CopyIpv4Address(dhcpOptions.requestedIp,defaultAssignedIpAddress.Ip);
+        CopyIpv4Address(dhcpOptions.nextServerIp,defaultAssignedIpAddress.gateway);
+        CopyIpv4Address(dhcpOptions.subnetMask,defaultAssignedIpAddress.subnet);
         log_information("[dhcp:ack] system has fetch new ip %s",ipstrBuffer);
-        printf("\033[20,50HIp:      %d.%d.%d.%d",ipstrBuffer[0],ipstrBuffer[1],ipstrBuffer[2],ipstrBuffer[3]);
+        printf("\033[20,50HIp:      %d.%d.%d.%d",dhcpOptions.requestedIp[0],dhcpOptions.requestedIp[1],dhcpOptions.requestedIp[2],dhcpOptions.requestedIp[3]);
         printf("\033[21,50HNetmask: %d.%d.%d.%d",dhcpOptions.subnetMask[0],dhcpOptions.subnetMask[1],dhcpOptions.subnetMask[2],dhcpOptions.subnetMask[3]);
         printf("\033[22,50HGateway: %d.%d.%d.%d",dhcpOptions.nextServerIp[0],dhcpOptions.nextServerIp[1],dhcpOptions.nextServerIp[2],dhcpOptions.nextServerIp[3]);
     }

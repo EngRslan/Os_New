@@ -14,6 +14,6 @@ typedef struct
 
 typedef void (*UdpHandler)(NetBuffer *);
 void UdpSend(NetBuffer *netbuffer, Ipv4Address ip,uint16_t src_port,uint16_t dst_port);
-void UdpReceive(NetBuffer * netBuffer);
+void UdpReceive(NetBuffer * netBuffer,Ipv4Address srcip);
 void UdpRegisterHandler(uint16_t port,UdpHandler handler);
 #endif

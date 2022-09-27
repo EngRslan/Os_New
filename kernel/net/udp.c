@@ -39,7 +39,7 @@ void UdpRegisterHandler(uint16_t port,UdpHandler handler){
     entry->port = port;
     entry->handler = handler;
 }
-void UdpReceive(NetBuffer * netBuffer){
+void UdpReceive(NetBuffer * netBuffer,Ipv4Address srcip){
     UdpHeader *udpHeader = (UdpHeader *)netBuffer->packetData;
     for (uint16_t i = 0; i < MAX_UDP_TABLE_ENTRIES; i++)
     {

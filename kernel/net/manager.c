@@ -8,6 +8,7 @@
 #include <kernel/net/arp.h>
 #include <kernel/net/udp.h>
 #include <kernel/net/dhcp.h>
+#include <kernel/net/icmp.h>
 
 typedef struct
 {
@@ -41,7 +42,7 @@ void NetworkInstall(){
     EthernetRegisterProtocol(ETHERTYPE_IP,IpReceive);
 
     IpRegisterProtocolHandler(IP_UDP,UdpReceive);
-    
+    IpRegisterProtocolHandler(IP_ICMP,IcmpReceive);
     //REGISTER APPLICATION LAYER;
     UdpRegisterHandler(DHCP_DEFAULT_BOOT_CLIENT_PORT,DhcpReceive);
 

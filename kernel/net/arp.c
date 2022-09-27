@@ -70,7 +70,7 @@ void ArpSend(NetInterface *intf, MacAddress dstMacAddr,Ipv4Address dstIpAddr,Arp
     arp_header->IpAddrLen = sizeof(Ipv4Address);
 
     arp_header->hwType = SWITCH_ENDIAN16(ARP_ETH_TYPE);
-    arp_header->protocol = SWITCH_ENDIAN16(ETHERTYPE_ARP);
+    arp_header->protocol = SWITCH_ENDIAN16(0x800);
 
     EthernetSend(netbuffer,dstMacAddr,ETHERTYPE_ARP);
     // ethernet_send_packet(brdcast,(ptr_t)arp_pack,sizeof(arp_header_t),0x0806);
@@ -91,8 +91,8 @@ uint8_t *Arp_lookup(NetInterface *intf, Ipv4Address ip){
 
     ArpSend(intf, g__broadcastMacAddress,ip,ARP_OP_REQUEST);
     // arp_send_packet(&broadcast_mac_address,ip);
-    
-    while (1)
+    uint32_t timeout = 10000;
+    while (timeout--)
     {
         for (uint8_t i = 0; i < 10; i++)
         {
