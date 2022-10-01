@@ -188,6 +188,13 @@ void DhcpReceive(NetBuffer *netbuffer){
         CopyIpv4Address(dhcpOptions.requestedIp,defaultAssignedIpAddress.Ip);
         CopyIpv4Address(dhcpOptions.nextServerIp,defaultAssignedIpAddress.gateway);
         CopyIpv4Address(dhcpOptions.subnetMask,defaultAssignedIpAddress.subnet);
+        
+        CopyIpv4Address(dhcpOptions.requestedIp,netbuffer->interface->Ip);
+        CopyIpv4Address(dhcpOptions.nextServerIp,netbuffer->interface->gateway);
+        CopyIpv4Address(dhcpOptions.subnetMask,netbuffer->interface->subnet);
+        netbuffer->interface->hasValidIp = true;
+        netbuffer->interface->assignMethod = IP_METHOD_DHCP;
+
         log_information("[dhcp:ack] system has fetch new ip %s",ipstrBuffer);
         printf("\033[20,50HIp:      %d.%d.%d.%d",dhcpOptions.requestedIp[0],dhcpOptions.requestedIp[1],dhcpOptions.requestedIp[2],dhcpOptions.requestedIp[3]);
         printf("\033[21,50HNetmask: %d.%d.%d.%d",dhcpOptions.subnetMask[0],dhcpOptions.subnetMask[1],dhcpOptions.subnetMask[2],dhcpOptions.subnetMask[3]);

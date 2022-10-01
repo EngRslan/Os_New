@@ -17,6 +17,11 @@ struct NetInterface{
     MacAddress macAddress;
     void(*send)(NetBuffer *);
     char name[50];
+    IpAssignMethod assignMethod;
+    bool hasValidIp;
+    Ipv4Address Ip;
+    Ipv4Address subnet;
+    Ipv4Address gateway;
 } ;
 
 #endif

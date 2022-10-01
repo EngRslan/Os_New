@@ -20,11 +20,7 @@ struct{
     bool isPresent;
     NetInterface *interface;
     InterfaceDriver driver;
-    IpAssignMethod assignMethod;
-    bool hasValidIp;
-    Ipv4Address Ip;
-    Ipv4Address subnet;
-    Ipv4Address gateway;
+    
 } netDevices[5];
 
 
@@ -35,7 +31,7 @@ void NetworkInstall(){
 
     netDevices[0].isPresent = true;
     netDevices[0].interface = netf;
-    netDevices[0].hasValidIp = false;
+
 
     //Register DATALINK LAYER;
     EthernetRegisterProtocol(ETHERTYPE_ARP,ArpReceive);
@@ -51,11 +47,7 @@ void NetworkInstall(){
 
 }
 
-Ipv4Address *GetDefaultIpAddress()
+NetInterface *GetDefaultInterface()
 {
-    if(netDevices[0].hasValidIp){
-        return &netDevices[0].Ip;
-    }
-
-    return NULL;
+    return &netDevices[0];
 }

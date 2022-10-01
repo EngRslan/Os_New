@@ -3,6 +3,6 @@
 #include <kernel/net/addr.h>
 
 void NetworkInstall();
-Ipv4Address *GetDefaultIpAddress();
+NetInterface *GetDefaultInterface();
 
 #endif
