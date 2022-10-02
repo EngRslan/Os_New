@@ -49,8 +49,11 @@ void task2(){
   // }
 }
 
-void onstate(TcpConnection *con,TcpState oldState,TcpState newState){
-
+void onstate(TcpConnection *conn,TcpState oldState,TcpState newState){
+  if(newState == TCP_ESTABLISHED){
+    char *s="GET / HTTP/1.1\r\nUser-Agent: EgyOS\r\nHost: 192.168.8.1\r\n\r\n";
+    TcpSend(conn,s,strlen(s));
+  }
 }
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -156,7 +159,7 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   TcpInit();
   TcpConnection *conn = TcpCreate();
   conn->onState=onstate;
-  Ipv4Address ip = {10,0,2,2};
+  Ipv4Address ip = {192,168,8,1};
   TcpConnect(conn,ip,80);
 
   // uint8_t e = 0b00001111;

@@ -21,7 +21,7 @@ kernel:
 kernelmods:
 	$(MAKE) --directory=$(KERNELMODS_DIR) build
 
-run:
+runs:
 	qemu-system-i386 -boot d -s -S -serial stdio -vga std -nodefaults \
 	-drive file=$(ISO_NAME),media=cdrom,if=ide \
 	-drive file=hdd.img,media=disk,if=ide,format=raw \
@@ -30,7 +30,7 @@ run:
 	-object filter-dump,id=net0,netdev=net0,file=qdump \
 	-monitor telnet:127.0.0.1:55555,server,nowait;
 
-runs:
+run:
 	sudo qemu-system-i386 -boot d -s -S -serial stdio -vga std -nodefaults \
 	-drive file=$(ISO_NAME),media=cdrom,if=ide \
 	-drive file=hdd.img,media=disk,if=ide,format=raw \

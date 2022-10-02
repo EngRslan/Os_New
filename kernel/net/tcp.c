@@ -17,7 +17,7 @@
 list_t *_activeConnections=NULL;
 
 uint32_t baseIsn = 0;
-NetPort _portSeq = 20000;
+NetPort _portSeq = 20001;
 NetPort generateLocalPort(){
     return ++_portSeq;
 }
@@ -196,10 +196,12 @@ void TcpReceiveSynSent(TcpConnection *conn,TcpHeader *tcpHeader){
             conn->sndWnd = tcpHeader->windowSize;
             conn->sndWl1 = tcpHeader->seqNum;
             conn->sndWl2 = tcpHeader->ackNum;
-
-            TcpSetState(conn,TCP_ESTABLISHED);
+            
             TcpSendPacket(conn,conn->sndNxt,TCP_ACK,NULL,0);
+            TcpSetState(conn,TCP_ESTABLISHED);
         }
+    }else{
+
     }
 }
 void TcpReceive(NetBuffer *netbuffer,Ipv4Address ip){
@@ -215,11 +217,13 @@ void TcpReceive(NetBuffer *netbuffer,Ipv4Address ip){
     }
     else if(conn->state == TCP_SYN_SENT){
         TcpReceiveSynSent(conn,tcpHeader);
+    }else{
+        // TcpReceiveGeneral(conn,tcpHeader,)
     }
     
 }
 void TcpSend(TcpConnection *conn, const void *data, uint32_t count){
-    TcpSendPacket(conn, conn->sndNxt, TCP_ACK, data, count);
+    TcpSendPacket(conn, conn->sndNxt, TCP_ACK | TCP_PSH, data, count);
 }
 void TcpInit(){
     Time tm;

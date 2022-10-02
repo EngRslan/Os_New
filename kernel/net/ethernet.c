@@ -53,7 +53,7 @@ void EthernetReceive(NetBuffer *packet_buffer){
             break;
         }
 
-        log_warning("[eth] Unhandled protocol type 0x%x",(uint32_t)message_type);
+        // log_warning("[eth] Unhandled protocol type 0x%x",(uint32_t)message_type);
     }
     kfree(eth_packet);
 }
