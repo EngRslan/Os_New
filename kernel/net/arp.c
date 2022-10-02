@@ -3,6 +3,8 @@
 #include <kernel/bits.h>
 #include <kernel/types.h>
 #include <kernel/net/arp.h>
+#include <kernel/system.h>
+#include <kernel/scheduler/scheduler.h>
 #include <kernel/net/addr.h>
 #include <kernel/net/ethernet.h>
 #include <kernel/net/intf.h>
@@ -90,19 +92,22 @@ uint8_t *Arp_lookup(NetInterface *intf, Ipv4Address ip){
     }
 
     ArpSend(intf, g__broadcastMacAddress,ip,ARP_OP_REQUEST);
+    InterruptForceSet();
     // arp_send_packet(&broadcast_mac_address,ip);
-    uint32_t timeout = 10000;
-    while (timeout--)
+    uint32_t millsStart = Millis();
+    uint32_t timeout = millsStart + 2000;
+    while (timeout > Millis())
     {
         for (uint8_t i = 0; i < 10; i++)
         {
             if(IsIpv4AddressEquals(arp_table[i].ip,ip) && arp_table[i].isPresent){
+                InterruptSoftClear();
                 return arp_table[i].mac;
             }
         }
     }
     
-
+    InterruptSoftClear();
     return NULL;
     
 }

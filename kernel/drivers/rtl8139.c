@@ -5,6 +5,7 @@
 #include <kernel/bits.h>
 #include <kernel/mem/vmm.h>
 #include <kernel/mem/kheap.h>
+#include <kernel/system.h>
 #include <kernel/isr.h>
 #include <logger.h>
 #include <stddef.h>
@@ -85,13 +86,14 @@ void rtl8139_send_packet(ptr_t data,uint32_t len){
     void * tx_buffer = (void *)ts_array[current_tx][2];
     memcpy(tx_buffer,(void *)data,len);
 
-    __asm__ __volatile__("cli");
+    InterruptClear();
     outportl(io_addr + ts_array[current_tx][0],virtual2physical((v_addr_t)ts_array[current_tx][2]));
     outportl(io_addr + ts_array[current_tx][1],len);
     
     if(++current_tx>3)
         current_tx = 0;
-    __asm__ __volatile__("sti");
+    InterruptSet();
+
 
     
     

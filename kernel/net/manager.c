@@ -49,5 +49,5 @@ void NetworkInstall(){
 
 NetInterface *GetDefaultInterface()
 {
-    return &netDevices[0];
+    return netDevices[0].interface;
 }

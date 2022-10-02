@@ -30,6 +30,7 @@
 #include <kernel/net/addr.h>
 #include <kernel/net/dhcp.h>
 #include <kernel/net/manager.h>
+#include <kernel/net/tcp.h>
 #include <kernel/elf.h>
 #include <kernel/scheduler/scheduler.h>
 
@@ -42,10 +43,14 @@ void task1(){
 }
 void task2(){
   // log_debug("task2");
-  Ipv4Address * ip = GetDefaultIpAddress();
-  if(ip != NULL){
-    printf("\033[23,43HIp:%d.%d.%d.%d",ip[0],ip[1],ip[2],ip[3]);//\033[1;37;0;44mtestcolor\033[mtest
-  }
+  // Ipv4Address * ip = GetDefaultIpAddress();
+  // if(ip != NULL){
+  //   printf("\033[23,43HIp:%d.%d.%d.%d",ip[0],ip[1],ip[2],ip[3]);//\033[1;37;0;44mtestcolor\033[mtest
+  // }
+}
+
+void onstate(TcpConnection *con,TcpState oldState,TcpState newState){
+
 }
 void kernel_main(uint64_t magic, multiboot_info_t * mbi) 
 {
@@ -147,6 +152,13 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   ScheduleInterval(task1,1000);
   // ScheduleInterval(task1,500);
   ScheduleInterval(task2,60*1000);
+
+  TcpInit();
+  TcpConnection *conn = TcpCreate();
+  conn->onState=onstate;
+  Ipv4Address ip = {10,0,2,2};
+  TcpConnect(conn,ip,80);
+
   // uint8_t e = 0b00001111;
   // __asm__ __volatile__ ("rorb $4,%0":"=r"(e):"r"(e));
   // e=SWITCH_BITS(e,4);

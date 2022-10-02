@@ -16,7 +16,6 @@
 #define CMOS_REG_A          0X0A
 #define CMOS_REG_B          0X0B
 #define CMOS_REG_C          0X0C
-
 struct tm
 {
     int32_t tm_sec;     // seconds, 0 to 59
@@ -30,6 +29,7 @@ struct tm
     int32_t tm_isdst;   // daylight saving time
 };
 
+extern struct tm _tm;
 void rtc_install();
 void str_date(char * str);
 #endif

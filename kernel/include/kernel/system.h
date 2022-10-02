@@ -18,5 +18,9 @@ uint16_t inports(uint16_t _port);
 void outports(uint16_t _port, uint16_t _data);
 uint32_t inportl(uint16_t _port);
 void outportl(uint16_t _port, uint32_t _data);
-
+void InterruptClear();
+void InterruptSet();
+void InterruptForceClear();
+void InterruptForceSet();
+void InterruptSoftClear();
 #endif

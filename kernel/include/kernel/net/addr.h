@@ -5,7 +5,7 @@
 
 typedef uint8_t MacAddress[6];
 typedef uint8_t Ipv4Address[4];
-
+typedef uint16_t NetPort;
 extern MacAddress g__broadcastMacAddress;
 extern Ipv4Address g__broadcastIpAddress;
 

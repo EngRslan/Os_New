@@ -2,32 +2,51 @@
 #define TCP_H
 #include <kernel/types.h>
 #include <kernel/net/addr.h>
+#include <kernel/net/intf.h>
+#include <kernel/datastruct/link.h>
 #include <stdbool.h>
-typedef struct Link
-{
-    Link *next;
-    Link *prev;
-}Link;
 
+#define TCP_FIN     (1 << 0)
+#define TCP_SYN     (1 << 1)
+#define TCP_RST     (1 << 2)
+#define TCP_PSH     (1 << 3)
+#define TCP_ACK     (1 << 4)
+#define TCP_URG     (1 << 5)
+
+#define SEQ_LT(x,y) ((int)((x)-(y)) < 0)
+#define SEQ_LE(x,y) ((int)((x)-(y)) <= 0)
+#define SEQ_GT(x,y) ((int)((x)-(y)) > 0)
+#define SEQ_GE(x,y) ((int)((x)-(y)) >= 0)
+
+
+typedef struct TcpChecksum{
+    Ipv4Address src;
+    Ipv4Address dst;
+    uint8_t res;
+    uint8_t protocol;
+    uint16_t len;
+
+} __attribute((packed)) TcpChecksum;
 typedef struct TcpHeader
 {
     uint16_t srcPort;
     uint16_t dstPort;
     uint32_t seqNum;
     uint32_t ackNum;
+    uint8_t dataOffset ;
     union
     {
-        uint16_t flagsbits;
+        uint8_t flagsbits;
         struct
         {
-            uint8_t dataOffset  :4;
-            uint8_t _           :6;
-            uint8_t isUrgent    :1;
-            uint8_t isAck       :1;
-            uint8_t isPush      :1;
-            uint8_t isReset     :1;
-            uint8_t isSync      :1;
+            
             uint8_t isFinish    :1;
+            uint8_t isSync      :1;
+            uint8_t isReset     :1;
+            uint8_t isPush      :1;
+            uint8_t isAck       :1;
+            uint8_t isUrgent    :1;
+            uint8_t _           :2;
         };
         
     };
@@ -36,6 +55,7 @@ typedef struct TcpHeader
     uint16_t urgentPtr;
     
 }__attribute__((packed)) TcpHeader;
+
 
 typedef enum TcpState {
     TCP_CLOSED      = 0,
@@ -53,12 +73,13 @@ typedef enum TcpState {
 
 typedef struct TcpConnection
 {
+    Link link;
     TcpState state;
     Ipv4Address localAddr;
     Ipv4Address remoteAddr;
-    uint16_t localPort;
-    uint16_t remotePort;
-
+    NetPort localPort;
+    NetPort remotePort;
+    NetInterface *intf;
     // Send State
     uint32_t sndUna;    // Send Unacknowledge pointer
     uint32_t sndNxt;    // send next
@@ -76,6 +97,8 @@ typedef struct TcpConnection
 
     uint32_t mslWait;
 
+    Link reSequence;
+
     void (*onError)(struct TcpConnection *conn, uint32_t error);
     void (*onState)(struct TcpConnection *conn, TcpState oldState, TcpState newState);
     void (*onData)(struct TcpConnection *conn, const uint8_t *data, uint32_t len);
@@ -83,7 +106,8 @@ typedef struct TcpConnection
 
 
 TcpConnection *TcpCreate();
-bool TcpConnect(TcpConnection *conn, const Ipv4Address *addr,uint16_t port);
+void TcpInit();
+bool TcpConnect(TcpConnection *conn, Ipv4Address addr,uint16_t port);
 void TcpClose(TcpConnection *conn);
 void TcpSend(TcpConnection *conn, const void *data, uint32_t count);
 #endif
