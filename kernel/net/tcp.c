@@ -208,18 +208,59 @@ void TcpReceive(NetBuffer *netbuffer,Ipv4Address ip){
     TcpHeader *tcpHeader = (TcpHeader *)netbuffer->packetData;
     TcpSwap(tcpHeader);
     TcpConnection *conn = TcpFind(ip,tcpHeader->srcPort,netbuffer->interface->Ip,tcpHeader->dstPort);
+
+    
+
     if(!conn || conn->state == TCP_CLOSED){
+        TcpSendPacket(conn,conn->sndNxt,TCP_RST,NULL,0);
         return;
     }
 
-    if(conn->state == TCP_LISTEN){
+    if(tcpHeader->isReset && conn->state == TCP_SYN_SENT)
+    {
+        conn->state = TCP_CLOSED;
+        if(conn->onError)   {
+            conn->onError(conn,TCP_ERROR_REFUSED);
+            return;
+        }
+    }
+
+    if(tcpHeader->isSync){
+        conn->irs = tcpHeader->seqNum;
+        conn->rcvNxt = conn->irs + 1;
+
+        if(conn->state != TCP_SYN_SENT && conn->state != TCP_LISTEN){
+            TcpSendPacket(conn,conn->sndNxt,TCP_RST,NULL,0);
+            return;
+        }
+        //Sync recievied here we are opened the connection
+        if(tcpHeader->isAck){
+            conn->sndUna = tcpHeader->ackNum;
+            conn->sndWnd = tcpHeader->windowSize;
+            conn->sndWl1 = tcpHeader->seqNum;
+            conn->sndWl2 = tcpHeader->ackNum;
+            TcpSendPacket(conn, conn->sndNxt, TCP_ACK , NULL, 0);
+            TcpSetState(conn,TCP_ESTABLISHED);
+        }
+        
 
     }
-    else if(conn->state == TCP_SYN_SENT){
-        TcpReceiveSynSent(conn,tcpHeader);
-    }else{
-        // TcpReceiveGeneral(conn,tcpHeader,)
+
+    if(tcpHeader->isPush){
+        TcpSendPacket(conn, conn->sndNxt, TCP_ACK , NULL, 0);
+        if(conn->onData){
+            conn->onData(conn,(uint8_t *)tcpHeader + (tcpHeader->dataOffset >> 2),)
+        }
     }
+
+    // if(conn->state == TCP_LISTEN){
+
+    // }
+    // else if(conn->state == TCP_SYN_SENT){
+    //     TcpReceiveSynSent(conn,tcpHeader);
+    // }else{
+    //     // TcpReceiveGeneral(conn,tcpHeader,)
+    // }
     
 }
 void TcpSend(TcpConnection *conn, const void *data, uint32_t count){
