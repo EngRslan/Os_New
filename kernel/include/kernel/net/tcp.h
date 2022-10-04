@@ -27,6 +27,22 @@ typedef struct TcpChecksum{
     uint16_t len;
 
 } __attribute((packed)) TcpChecksum;
+typedef union TcpFlags
+{
+    uint8_t bits;
+    struct
+    {
+        
+        uint8_t isFinish    :1;
+        uint8_t isSync      :1;
+        uint8_t isReset     :1;
+        uint8_t isPush      :1;
+        uint8_t isAck       :1;
+        uint8_t isUrgent    :1;
+        uint8_t _           :2;
+    };
+} TcpFlags;
+
 typedef struct TcpHeader
 {
     uint16_t srcPort;
@@ -34,22 +50,7 @@ typedef struct TcpHeader
     uint32_t seqNum;
     uint32_t ackNum;
     uint8_t dataOffset ;
-    union
-    {
-        uint8_t flagsbits;
-        struct
-        {
-            
-            uint8_t isFinish    :1;
-            uint8_t isSync      :1;
-            uint8_t isReset     :1;
-            uint8_t isPush      :1;
-            uint8_t isAck       :1;
-            uint8_t isUrgent    :1;
-            uint8_t _           :2;
-        };
-        
-    };
+    TcpFlags flags;
     uint16_t windowSize;
     uint16_t checksum;
     uint16_t urgentPtr;
@@ -80,24 +81,36 @@ typedef struct TcpConnection
     NetPort localPort;
     NetPort remotePort;
     NetInterface *intf;
-    // Send State
-    uint32_t sndUna;    // Send Unacknowledge pointer
-    uint32_t sndNxt;    // send next
-    uint32_t sndWnd;    // Send window
-    uint32_t sndUP;     // send urgent pointer
-    uint32_t sndWl1;    // segment sequence number
-    uint32_t sndWl2;    // segment ack number
-    uint32_t iss;       // initial send sequence number
+    
+    // System Initial Sequnce Number
+    uint32_t iss;
+    // System Sequence
+    uint32_t nxtSeq;
 
-    // Receive State
-    uint32_t rcvNxt;
-    uint32_t rcvWnd;
-    uint32_t rcvUP;
-    uint32_t irs;   //initial receive sequence number
+    // Initaial Receive Number
+    uint32_t riss;
+    uint32_t rNxtSeq;
 
-    uint32_t mslWait;
+    // Send State (MYOS)
+    uint32_t unAck;    // Send Unacknowledge pointer
+    // uint32_t sndNxt;    // send next
+    // uint32_t iss;       // initial send sequence number
 
-    Link reSequence;
+
+    // uint32_t sndWnd;    // Send window
+    // uint32_t sndUP;     // send urgent pointer
+    // uint32_t sndWl1;    // segment sequence number
+    // uint32_t sndWl2;    // segment ack number
+
+    // Receive State (Other Partner)
+    // uint32_t rcvNxt;
+    // uint32_t irs;   //initial receive sequence number
+
+    // uint32_t rcvWnd;
+    // uint32_t rcvUP;
+
+    // uint32_t mslWait;
+
 
     void (*onError)(struct TcpConnection *conn, uint32_t error);
     void (*onState)(struct TcpConnection *conn, TcpState oldState, TcpState newState);
