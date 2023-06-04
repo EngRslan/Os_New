@@ -367,10 +367,21 @@ void TcpReceive(NetBuffer *netbuffer,Ipv4Address ip){
         conn->rNxtSeq += len;
         TcpSendPacket(conn, flags , NULL, 0);
     }
+    if(tcpHeader->flags.isPush){
+        flags.bits = 0;
+        flags.isFinish = 1;
+        // flags.isAck = 1;
+        conn->state = TCP_CLOSING;
+        TcpSendPacket(conn, flags , NULL, 0);
+        return;
+    }
+
+    if(conn->state == TCP_CLOSING){
+
+    }
 
     if(tcpHeader->flags.isFinish){
         flags.bits = 0;
-        flags.isFinish = 1;
         flags.isAck = 1;
         TcpSendPacket(conn, flags , NULL, 0);
     }

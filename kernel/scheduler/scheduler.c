@@ -42,6 +42,7 @@ void ScheduleInterval(ScheduleCallback callback,uint32_t interval){
 
     if(nextSchedule == NULL){
         nextSchedule = schedule;
+        __asm__("sti");
         return;
     }
 

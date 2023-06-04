@@ -1,4 +1,4 @@
-PREFIX=/home/muhammad/opt/cross/bin
+PREFIX=/home/engrslan/opt/cross/bin
 export PATH= $(shell printenv PATH):$(PREFIX)
 export CC=i686-elf-gcc
 export LINKER=i686-elf-ld

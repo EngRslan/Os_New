@@ -149,12 +149,12 @@ void kernel_main(uint64_t magic, multiboot_info_t * mbi)
   NetworkInstall();
   log_information("Installing Network Successfully");
 
-  loadKernelMods();
+  // loadKernelMods();
   uint32_t endmills = Millis();
   log_information("System loaded in %d MS",endmills - startmills);
-  ScheduleInterval(task1,1000);
-  // ScheduleInterval(task1,500);
-  ScheduleInterval(task2,60*1000);
+   ScheduleInterval(task1,1000);
+  // // ScheduleInterval(task1,500);
+   ScheduleInterval(task2,60*1000);
 
   NetInterface  *iface = GetDefaultInterface();
   while (!iface->hasValidIp)
