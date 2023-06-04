@@ -335,24 +335,137 @@ void TcpReceive(NetBuffer *netbuffer,Ipv4Address ip){
     //         return;
     //     }
     // }
+    
+    if(conn == NULL || conn->state == TCP_CLOSED){ //Connection already closed
+        flags.isReset = 1;
+        TcpSendPacket(conn,flags,NULL,0);
+        return;
+    }
+    else if(conn->state == TCP_LISTEN){ //Connection listen to some one to connect
+        /*
+        * if syn
+        *   send syn,ack
+        *   set state syn_received
+        * else if user call send
+        *   send syn
+        *   set state to syn_sent
+        */
+    }
+    else if(conn->state == TCP_SYN_RECEIVED){ //some one try to connect us
+        /*
+        * if syn,ack
+        *   set state to established
+        * else if user call close
+        *   send fin
+        *   set state to fin_wait_1
+        */
+    }
+    else if(conn->state == TCP_SYN_SENT)
+    { // we already try to connect to some one
 
-    if(conn->state == TCP_SYN_SENT){
-        if(!tcpHeader->flags.isSync){
-            flags.isReset = 1;
+        /*
+        * if syn
+        *   send ack
+        *   update riss
+        *   update rnxt
+        *   set state to syn_recieved
+        * else if syn,ack
+        *   send ack
+        *   update riss
+        *   update rnxt
+        *   update una
+        *   set state to established
+        * 
+        */
+
+       if(tcpHeader->flags.isSync && !tcpHeader->flags.isAck){
+            conn->riss = tcpHeader->seqNum;
+            conn->rNxtSeq = conn->riss + 1;
+            flags.bits = 0;
+            flags.isAck = 1;
             TcpSendPacket(conn, flags , NULL, 0);
-            return;
-        }
-
-        conn->riss = tcpHeader->seqNum;
-        conn->rNxtSeq = conn->riss + 1;
-
-        if(tcpHeader->flags.isAck){
+            TcpSetState(conn,TCP_SYN_RECEIVED);
+       }
+       else if(tcpHeader->flags.isSync && tcpHeader->flags.isAck)
+       {
+            conn->riss = tcpHeader->seqNum;
+            conn->rNxtSeq = conn->riss + 1;
+            flags.bits = 0;
             flags.isAck = 1;
             TcpSendPacket(conn, flags , NULL, 0);
             TcpSetState(conn,TCP_ESTABLISHED);
-        }
+       }
+        // if(!tcpHeader->flags.isSync){
+        //     flags.isReset = 1;
+        //     TcpSendPacket(conn, flags , NULL, 0);
+        //     return;
+        // }
+
+        // conn->riss = tcpHeader->seqNum;
+        // conn->rNxtSeq = conn->riss + 1;
+
+        // if(tcpHeader->flags.isAck){
+        //     flags.isAck = 1;
+        //     TcpSendPacket(conn, flags , NULL, 0);
+        //     TcpSetState(conn,TCP_ESTABLISHED);
+        // }
         
         return;
+    }
+    else if (conn->state == TCP_ESTABLISHED)
+    { // connection is ready to send or recieve data
+
+        /*
+        * if fin
+        *   send ack
+        *   set state to close_wait
+        * else if user call close
+        *   send fin
+        *   set state to to fin_wait_1
+        * else
+        *   handle data packet
+        *
+        */
+
+    }else if(conn->state == TCP_FIN_WAIT_1){ // our user send close signal we here send fin to other partner
+        /*
+        * if fin
+        *   send ack
+        *   set state to closing
+        * else if fin,ack
+        *   set state to fin_wait_2
+        * else reset
+        */
+    }else if(conn->state == TCP_FIN_WAIT_2){ // other side send us ack of fin
+        /*
+        * if fin
+        *   send ack
+        *   set state to time_wait
+        */
+    }else if(conn->state == TCP_CLOSING){ // we receive only fin and we are sent ack
+        /*
+        * if fin,ack
+        *   set state to time_wait
+        */
+    }else if(conn->state == TCP_TIME_WAIT){ // we are recieve ack of fin
+
+        /*
+        * if 2msl timeout
+        *   set state to closed
+        *   delete TCB
+        */
+
+    }else if(conn->state == TCP_CLOSE_WAIT){ //waiting other side to close the connection here we recieve fin and we are send ack
+        /*
+        * if user send close
+        *   send fin
+        *   set state to last_ack
+        */
+    }else if(conn->state == TCP_LAST_ACK){ //order to close connection wait to recieve ack
+        /*
+        * if fin,ack
+        *   set state to closed
+        */
     }
 
     if(tcpHeader->flags.isAck)

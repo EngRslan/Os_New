@@ -28,3 +28,10 @@ sudo ip tuntap add tap0 mode tap
 https://wiki.qemu.org/Documentation/Networking/NAT
 https://wiki.qemu.org/Documentation/Networking
 https://www.rfc-editor.org/rfc/rfc2132
+
+
+sudo qemu-system-i386 -boot d -vga std -nodefaults \
+	-drive file=alpine-extended-3.16.2-x86.iso,media=cdrom,if=ide \
+	-netdev tap,id=net0 \
+	-device rtl8139,netdev=net0,id=nic0,mac=52:54:00:6a:f0:f1 \
+	-object filter-dump,id=net0,netdev=net0,file=qdump
